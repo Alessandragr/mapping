@@ -27,13 +27,25 @@
 
 #Split
 
-echo "parameter: $*"
+#!/bin/bash
+
+#!/bin/bash
+
+echo "Paramètres: $*"
 for fichier in "$@"
 do
-    if [[ -f $fichier && $fichier == *.sam ]];
-    then
+    if [[ -f "$fichier" && "$fichier" == *.sam ]]
+     then
         echo "Le fichier $fichier est un fichier du type .sam"
+        
+        if [[ ! -s "$fichier" ]]
+         then
+            echo "Erreur : Le fichier '$fichier' est vide."
+            exit 1
+        else
+            echo "Le fichier '$fichier' n'est pas vide."
+        fi
     else
-        echo "Ce n'est pas un fichier do type .sam. Inserez un noveau fichier"
+        echo "Ce n'est pas un fichier du type .sam. Insérez un nouveau fichier."
     fi
 done
