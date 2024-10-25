@@ -1,0 +1,112 @@
+{
+  "todo": [
+    {
+      "creation_time": "2024-10-25T16:55:10.788Z",
+      "id": "10",
+      "prio": 11,
+      "references": [],
+      "title": "Verifier si c'est un fichier régulier, lisible"
+    },
+    {
+      "creation_time": "2024-10-25T15:24:27.266Z",
+      "description": {
+        "content": "Vérifier si le fichier contient le nombre correct de colonnes pour un fichier `.sam` (minimum 11 colonnes). Émettre une alerte pour un nombre de colonnes supérieur et une erreur si inférieur en disant que c'est pas un archive du type `.sam`.",
+        "mime": "text/markdown"
+      },
+      "id": "3",
+      "prio": 10,
+      "references": [],
+      "title": "Verifier le nombre correct de colonnes"
+    },
+    {
+      "creation_time": "2024-10-25T15:25:28.292Z",
+      "description": {
+        "content": "Combien de reads sont mappés ? Compter le nombre de reads en fonction du flag (colonne #2).",
+        "mime": "text/markdown"
+      },
+      "id": "4",
+      "prio": 9,
+      "references": [],
+      "title": "Verifier combien de reads sont mappés"
+    },
+    {
+      "creation_time": "2024-10-25T15:27:00.856Z",
+      "description": {
+        "content": "Où les reads sont-ils mappés ? Est-ce que l’alignement est homogène le long de la séquence de référence ? Compter le nombre de reads par position sur le chromosome.\n",
+        "mime": "text/markdown"
+      },
+      "id": "6",
+      "prio": 8,
+      "references": [],
+      "title": "Verifier où les reads sont-ils mappés"
+    },
+    {
+      "creation_time": "2024-10-25T15:28:01.113Z",
+      "description": {
+        "content": "Comment les reads (et paires de reads) sont-ils mappés ? Compter le nombre de reads pour chaque valeur de flag.\n",
+        "mime": "text/markdown"
+      },
+      "id": "7",
+      "prio": 7,
+      "references": [],
+      "title": "Reads (et paires de reads) mappés"
+    },
+    {
+      "creation_time": "2024-10-25T15:26:22.736Z",
+      "description": {
+        "content": "Combien de reads sont mappés par chromosome ? Compter les reads par chromosome. ",
+        "mime": "text/markdown"
+      },
+      "id": "5",
+      "prio": 7,
+      "references": [],
+      "title": "Reads mappés par chromosome"
+    },
+    {
+      "creation_time": "2024-10-25T15:28:42.257Z",
+      "description": {
+        "content": "Avec quelle qualité les reads sont-ils mappés ? Compter les reads pour chaque score de qualité ou par tranche de valeurs de score de mapping.\n",
+        "mime": "text/markdown"
+      },
+      "id": "8",
+      "prio": 6,
+      "references": [],
+      "title": "Qualité des reads mappés"
+    },
+    {
+      "creation_time": "2024-10-25T15:29:24.084Z",
+      "description": {
+        "content": "En fonction des questions 2 et 4, implémenter des paramètres pour filtrer les données. Par exemple, ne conserver que les reads complètement mappés ou ceux avec un score de qualité de mapping inférieur à 30.\n",
+        "mime": "text/markdown"
+      },
+      "id": "9",
+      "references": [],
+      "title": "D'autres filtre pour les données"
+    }
+  ],
+  "in-progress": [
+    {
+      "creation_time": "2024-10-25T15:23:07.483Z",
+      "description": {
+        "content": "Le code doit recevoir une archive et vérifier si c'est bien un fichier archive (et non un dossier) de type `.sam`.  Renvoyer une erreur si c'est le cas.",
+        "mime": "text/markdown"
+      },
+      "id": "1",
+      "references": [],
+      "title": "Recevoir une archive et vérifier si c'est un fichier de type `.sam`"
+    },
+    {
+      "creation_time": "2024-10-25T15:23:52.232Z",
+      "description": {
+        "content": "Vérifier si cette archive est vide et renvoyer une erreur si c’est le cas.",
+        "mime": "text/markdown"
+      },
+      "id": "2",
+      "prio": 11,
+      "references": [],
+      "title": "Vérifier si cette archive est vide"
+    }
+  ],
+  "testing": [],
+  "done": []
+}

@@ -25,7 +25,7 @@
 
 # EXTRA : Projet additionnel : Analyser la qualité du CIGAR. Plus un CIGAR est long, plus la qualité du read est incertaine, tandis que les CIGAR plus courts indiquent un alignement plus sûr avec le génome de référence.
 
-#Split
+# Split - verifier la quantité de colone
 
 #!/bin/bash
 

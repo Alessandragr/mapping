@@ -2,7 +2,7 @@
 #-*- coding : utf-8 -*-
 
 
-__authors__ = ("Alessandra Ribeiro")
+__authors__ = ("GONCALVES RIBEIRO Alessandra, IBRAHIM AMOUKOU Najat")
 __contact__ = ("alessandra.goncalves-ribeiro@etu.umontpellier.fr")
 __version__ = "0.0.1"
 __date__ = "10/15/2024"
