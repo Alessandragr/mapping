@@ -30,14 +30,15 @@
 #!/bin/bash
 
 #!/bin/bash
-
 echo "Paramètres: $*"
 for fichier in "$@"
 do
+    # Vérification si c'est un fichier régulier et si l'extension est .sam
     if [[ -f "$fichier" && "$fichier" == *.sam ]]
      then
         echo "Le fichier $fichier est un fichier du type .sam"
         
+        # Vérifie si le fichier est vide
         if [[ ! -s "$fichier" ]]
          then
             echo "Erreur : Le fichier '$fichier' est vide."
@@ -45,7 +46,41 @@ do
         else
             echo "Le fichier '$fichier' n'est pas vide."
         fi
+
+        # Verification du nombres de colones
+        ligne_compteur=0
+
+        # Vérification des colonnes sur les trois premières lignes non-en-tête
+        while IFS= read -r ligne || [[ -n "$ligne" ]]
+         do
+            # Ignorer les lignes d'en-tête (commençant par '@')
+            if [[ $ligne == @* ]]
+            then
+                continue
+            fi
+            
+            # Compte le nombre de colonnes (séparées par des tabulations)
+            nb_colonnes=$(echo "$ligne" | awk -F'\t' '{print NF}')
+
+            # Vérifie le nombre de colonnes
+            if (( nb_colonnes < 11 ))
+            then
+                echo "Erreur : La ligne '$ligne' dans '$fichier' contient seulement $nb_colonnes colonnes. Ce n'est pas un fichier .sam valide."
+                exit 1
+            fi
+
+            # Incrémente le compteur et s'arrête après les 3 premieres lignes
+            ((ligne_compteur++))
+            if (( ligne_compteur == 3 ))
+             then
+                break
+            fi
+        done < "$fichier"
+
+        echo "Le fichier '$fichier' respecte le nombre minimum de colonnes ."
+
     else
         echo "Ce n'est pas un fichier du type .sam. Insérez un nouveau fichier."
     fi
 done
+
