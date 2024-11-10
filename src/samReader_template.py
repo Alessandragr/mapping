@@ -3,7 +3,7 @@
 
 
 __authors__ = ("GONCALVES RIBEIRO Alessandra, IBRAHIM AMOUKOU Najat")
-__contact__ = ("alessandra.goncalves-ribeiro@etu.umontpellier.fr")
+__contact__ = ("alessandra.goncalves-ribeiro@etu.umontpellier.fr, najat.ibrahim-amoukou@etu.umontpellier.fr")
 __version__ = "0.0.1"
 __date__ = "10/15/2024"
 __licence__ ="This program is free software: you can redistribute it and/or modify

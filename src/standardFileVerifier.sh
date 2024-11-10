@@ -1,11 +1,6 @@
 #!/bin/bash
 # -*- coding: utf-8 -*-
 
-# Le code doit recevoir une archive et vérifier si c'est bien un fichier archive (et non un dossier) de type `.sam`.  Renvoyer une erreur si c'est le cas.
-
-# Vérifier si cette archive est vide et renvoyer une erreur si c’est le cas. 
-
-# Vérifier si le fichier contient le nombre correct de colonnes pour un fichier `.sam` (minimum 11 colonnes). Émettre une alerte pour un nombre de colonnes supérieur et une erreur si inférieur en disant que c'est pas un archive du type `.sam`.
 
 # Combien de reads sont mappés ? Compter le nombre de reads en fonction du flag (colonne #2).
 
@@ -25,16 +20,11 @@
 
 # EXTRA : Projet additionnel : Analyser la qualité du CIGAR. Plus un CIGAR est long, plus la qualité du read est incertaine, tandis que les CIGAR plus courts indiquent un alignement plus sûr avec le génome de référence.
 
-# Split - verifier la quantité de colone
-
-#!/bin/bash
-
-#!/bin/bash
 echo "Paramètres: $*"
 for fichier in "$@"
 do
     # Vérification si c'est un fichier régulier et si l'extension est .sam
-    if [[ -f "$fichier" && "$fichier" == *.sam ]]
+    if [[ -f "$fichier" && "$fichier" == *.sam && -r "$fichier" ]]
      then
         echo "Le fichier $fichier est un fichier du type .sam"
         
@@ -45,42 +35,59 @@ do
             exit 1
         else
             echo "Le fichier '$fichier' n'est pas vide."
+            # Verification du nombres de colones
+            ligne_compteur=0
+
+            # Vérification des colonnes sur les trois premières lignes non-en-tête
+            while IFS= read -r ligne || [[ -n "$ligne" ]]
+            do
+                # Ignorer les lignes d'en-tête (commençant par '@')
+                if [[ $ligne == @* ]]
+                then
+                    continue
+                fi
+                
+                # Compte le nombre de colonnes (séparées par des tabulations)
+                nb_colonnes=$(echo "$ligne" | awk -F'\t' '{print NF}')
+
+                # Vérifie le nombre de colonnes
+                if (( nb_colonnes < 11 ))
+                then
+                    echo "Erreur : La ligne '$ligne' dans '$fichier' contient seulement $nb_colonnes colonnes. Ce n'est pas un fichier .sam valide."
+                    exit 1
+                fi
+
+                # Incrémente le compteur et s'arrête après les 3 premieres lignes
+                ((ligne_compteur++))
+                if (( ligne_compteur == 3 ))
+                then
+                    break
+                fi
+            done < "$fichier"
+
+            echo "Le fichier '$fichier' respecte le nombre minimum de colonnes."
         fi
 
-        # Verification du nombres de colones
-        ligne_compteur=0
+            count_reads_in_sam() {
+                # Compte le total de reads
+                local totalReads=$(awk '!/^@/ {print $2}' "$fichier" | wc -l)
+                echo "Le total de reads est: $totalReads"
 
-        # Vérification des colonnes sur les trois premières lignes non-en-tête
-        while IFS= read -r ligne || [[ -n "$ligne" ]]
-         do
-            # Ignorer les lignes d'en-tête (commençant par '@')
-            if [[ $ligne == @* ]]
-            then
-                continue
-            fi
-            
-            # Compte le nombre de colonnes (séparées par des tabulations)
-            nb_colonnes=$(echo "$ligne" | awk -F'\t' '{print NF}')
+                # Compte les reads non mappés (flag 4 indique les reads non mappés)
+                local unmappedReads=$(awk '$2 == 4 {print $2}' "$fichier" | wc -l)
+                echo "Le total de reads non mappés est: $unmappedReads"
 
-            # Vérifie le nombre de colonnes
-            if (( nb_colonnes < 11 ))
-            then
-                echo "Erreur : La ligne '$ligne' dans '$fichier' contient seulement $nb_colonnes colonnes. Ce n'est pas un fichier .sam valide."
-                exit 1
-            fi
+                # Compte les reads en duplicité (flag 102 indique les reads en duplicité)
+                local duplicatedReads=$(awk '$2 == 102 {print $2}' "$fichier" | wc -l)
+                echo "Le total de reads en duplicité est: $duplicatedReads"
 
-            # Incrémente le compteur et s'arrête après les 3 premieres lignes
-            ((ligne_compteur++))
-            if (( ligne_compteur == 3 ))
-             then
-                break
-            fi
-        done < "$fichier"
-
-        echo "Le fichier '$fichier' respecte le nombre minimum de colonnes ."
-
+                # Compte les reads mappés (les reads non mappés ne sont pas inclus)
+                local mappedReads=$(awk '!/^@/ && $2 != 4 {print $2}' "$fichier" | wc -l)
+                echo "Le total de reads mappés est: $mappedReads"
+            }
+            count_reads_in_sam
     else
-        echo "Ce n'est pas un fichier du type .sam. Insérez un nouveau fichier."
+        echo "Erreur: Ce n'est pas un fichier du type régulier et '.sam'. Insérez un nouveau fichier valide avec les permissions de lecture."
     fi
 done
 

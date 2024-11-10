@@ -1,17 +1,6 @@
 {
   "todo": [
     {
-      "creation_time": "2024-10-25T15:25:28.292Z",
-      "description": {
-        "content": "Combien de reads sont mappés ? Compter le nombre de reads en fonction du flag (colonne #2).",
-        "mime": "text/markdown"
-      },
-      "id": "4",
-      "prio": 9,
-      "references": [],
-      "title": "Verifier combien de reads sont mappés"
-    },
-    {
       "creation_time": "2024-10-25T15:27:00.856Z",
       "description": {
         "content": "Où les reads sont-ils mappés ? Est-ce que l’alignement est homogène le long de la séquence de référence ? Compter le nombre de reads par position sur le chromosome.\n",
@@ -68,6 +57,19 @@
   ],
   "in-progress": [
     {
+      "creation_time": "2024-10-25T15:25:28.292Z",
+      "description": {
+        "content": "Combien de reads sont mappés ? Compter le nombre de reads en fonction du flag (colonne #2).",
+        "mime": "text/markdown"
+      },
+      "id": "4",
+      "prio": 9,
+      "references": [],
+      "title": "Verifier combien de reads sont mappés"
+    }
+  ],
+  "testing": [
+    {
       "creation_time": "2024-10-25T16:55:10.788Z",
       "id": "10",
       "prio": 11,
@@ -86,16 +88,6 @@
       "title": "Vérifier si cette archive est vide"
     },
     {
-      "creation_time": "2024-10-25T15:23:07.483Z",
-      "description": {
-        "content": "Le code doit recevoir une archive et vérifier si c'est bien un fichier archive (et non un dossier) de type `.sam`.  Renvoyer une erreur si c'est le cas.",
-        "mime": "text/markdown"
-      },
-      "id": "1",
-      "references": [],
-      "title": "Recevoir une archive et vérifier si c'est un fichier de type `.sam`"
-    },
-    {
       "creation_time": "2024-10-25T15:24:27.266Z",
       "description": {
         "content": "Vérifier si le fichier contient le nombre correct de colonnes pour un fichier `.sam` (minimum 11 colonnes). Émettre une alerte pour un nombre de colonnes supérieur et une erreur si inférieur en disant que c'est pas un archive du type `.sam`.",
@@ -105,8 +97,17 @@
       "prio": 10,
       "references": [],
       "title": "Verifier le nombre correct de colonnes"
+    },
+    {
+      "creation_time": "2024-10-25T15:23:07.483Z",
+      "description": {
+        "content": "Le code doit recevoir une archive et vérifier si c'est bien un fichier archive (et non un dossier) de type `.sam`.  Renvoyer une erreur si c'est le cas.",
+        "mime": "text/markdown"
+      },
+      "id": "1",
+      "references": [],
+      "title": "Recevoir une archive et vérifier si c'est un fichier de type `.sam`"
     }
   ],
-  "testing": [],
   "done": []
 }
