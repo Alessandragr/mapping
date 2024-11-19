@@ -23,7 +23,150 @@ import pandas as pd
 
 
 
+
+import os
+
+def fileVerifier(file_path):
+    """
+    Vérifie si le fichier est un fichier SAM valide.
+    
+    :param file_path: Chemin du fichier à vérifier
+    :return: True si le fichier est valide, False sinon
+    """
+    # Vérification du type de fichier
+    if not os.path.isfile(file_path):
+        print(f"Erreur : {file_path} n'est pas un fichier régulier.")
+        return False
+
+    if not file_path.endswith('.sam'):
+        print(f"Erreur : {file_path} n'a pas l'extension '.sam'.")
+        return False
+
+    # Vérification si le fichier est vide
+    if os.path.getsize(file_path) == 0:
+        print(f"Erreur : Le fichier '{file_path}' est vide.")
+        return False
+
+    print(f"Le fichier '{file_path}' n'est pas vide.")
+    
+    # Vérification du nombre de colonnes dans les 3 premières lignes non-en-tête
+    with open(file_path, 'r') as file:
+        line_count = 0
+        for line in file:
+            # Ignorer les lignes d'en-tête
+            if line.startswith('@'):
+                continue
+
+            # Compte le nombre de colonnes (séparées par des tabulations)
+            num_columns = len(line.strip().split('\t'))
+
+            if num_columns < 11:
+                print(f"Erreur : La ligne '{line.strip()}' contient seulement {num_columns} colonnes.")
+                return False
+
+            # Compte jusqu'à 3 lignes
+            line_count += 1
+            if line_count == 3:
+                break
+
+    print(f"Le fichier '{file_path}' respecte le nombre minimum de colonnes.")
+    return True
+
 ## 2/ Read, 
+
+## Dictionnaire des flags
+flags = {
+    0: "read aligned to the reference in a forward strand",
+    1: "template having multiple segments in sequencing",
+    2: "each segment properly aligned according to the aligner",
+    4: "read unmapped",
+    8: "mate unmapped",
+    16: "read aligned to the reverse strand",
+    32: "mate aligned to the reverse strand",
+    64: "the first segment in the template",
+    128: "the second segment in the template",
+    256: "not primary alignment",
+    512: "read fails platform/vendor quality checks",
+    1024: "PCR or optical duplicate",
+    2048: "supplementary alignment"
+}
+
+def countReads(file_path):
+    """
+    Analyse un fichier SAM pour compter différents types de lectures.
+    
+    :param file_path: Chemin du fichier SAM à analyser
+    """
+    if not file_verifier(file_path):
+        return
+
+    total_reads = 0
+    unmapped_reads = 0
+    duplicated_reads = 0
+    mapped_reads = 0
+
+    with open(file_path, 'r') as file:
+        for line in file:
+            # Ignorer les lignes d'en-tête
+            if line.startswith('@'):
+                continue
+            
+            total_reads += 1
+            fields = line.strip().split('\t')
+            flag = int(fields[1])
+
+            # Vérifier les flags
+            if flag & 4:  # Non mappé
+                unmapped_reads += 1
+            elif flag & 1024:  # Duplicata
+                duplicated_reads += 1
+            else:
+                mapped_reads += 1
+
+    print(f"Le total de reads est: {total_reads}")
+    print(f"Le total de reads non mappés est: {unmapped_reads}")
+    print(f"Le total de reads en duplicité est: {duplicated_reads}")
+    print(f"Le total de reads mappés est: {mapped_reads}")
+
+
+## read per chromosom
+
+def readPerChrom(file_path):
+    if not fileVerifier(file_path):
+    return
+
+    # Initialiser un dictionnaire pour stocker le nombre de reads mappés par chromosome
+chromosome_counts = {}
+
+# Ouvrir le fichier SAM en mode lecture
+with open(file_path, 'r') as file:
+    for line in file:
+        # Ignorer les lignes d'en-tête (commencent par '@')
+        if line.startswith('@'):
+            continue
+
+        # Diviser la ligne en champs en utilisant une tabulation comme séparateur
+        fields = line.strip().split('\t')
+        
+        # Extraire le FLAG (champ 2) et le convertir en entier
+        flag = int(fields[1])
+        
+        # Extraire le chromosome (champ 3, aussi appelé RNAME)
+        chromosome = fields[2]
+
+        # Vérifier si le read est mappé :
+        # FLAG 4 indique que le read est "unmapped", donc si le bit 4 n'est pas défini (flag & 4 == 0), le read est mappé
+        if flag & 4 == 0:  
+            # Si le chromosome est déjà dans le dictionnaire, incrémenter le compteur pour ce chromosome
+            if chromosome in chromosome_counts:
+                chromosome_counts[chromosome] += 1
+            # Sinon, initialiser le compteur à 1 pour ce chromosome
+            else:
+                chromosome_counts[chromosome] = 1
+
+# Retourner le dictionnaire contenant le nombre de reads mappés par chromosome
+return chromosome_counts
+
 
 
 def count_reads_by_flag(file_path):
