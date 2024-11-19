@@ -5,11 +5,11 @@
 # Gestion de plusieurs chromosomes, un dictionnaire pour chaque chromosome
 # comment tester
 
-# Où les reads sont-ils mappés ? Est-ce que l’alignement est homogène le long de la séquence de référence ? Compter le nombre de reads par position sur le chromosome.
+# Où les reads sont-ils mappés ? Est-ce que l’alignement est homogène le long de la séquence de référence ? Compter le nombre de reads par position sur le chromosome. done
 
-# Comment les reads (et paires de reads) sont-ils mappés ? Compter le nombre de reads pour chaque valeur de flag.
+# Comment les reads (et paires de reads) sont-ils mappés ? Compter le nombre de reads pour chaque valeur de flag. done
 
-# Avec quelle qualité les reads sont-ils mappés ? Compter les reads pour chaque score de qualité ou par tranche de valeurs de score de mapping.
+# Avec quelle qualité les reads sont-ils mappés ? Compter les reads pour chaque score de qualité ou par tranche de valeurs de score de mapping. done
 
 # En fonction des questions 2 et 4, implémenter des paramètres pour filtrer les données. Par exemple, ne conserver que les reads complètement mappés ou ceux avec un score de qualité de mapping inférieur à 30.
 
