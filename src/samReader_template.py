@@ -46,53 +46,53 @@ import os
 
 def fileVerifier(file_path):
     """
-    Vérifie si le fichier est un fichier SAM valide.
+    Check if it's a correct sam file.
     
-    :param file_path: Chemin du fichier à vérifier
-    :return: True si le fichier est valide, False sinon
+    :param file_path: path of the file to check
+    :return: True if file is valid, else False
     """
-    # Vérification du type de fichier
+     # Check if it's a regular file
     if not os.path.isfile(file_path):
-        print(f"Erreur : {file_path} n'est pas un fichier régulier.")
+        print(f"Error : {file_path} is not valid.")
         return False
-
+    # Check if the file has a .sam extension
     if not file_path.endswith('.sam'):
-        print(f"Erreur : {file_path} n'a pas l'extension '.sam'.")
+        print(f"Error : {file_path} doesn't have '.sam' extension.")
         return False
 
-    # Vérification si le fichier est vide
+    # # Check if file is empty
     if os.path.getsize(file_path) == 0:
-        print(f"Erreur : Le fichier '{file_path}' est vide.")
+        print(f"Error : file  '{file_path}' is empty.")
         return False
 
-    print(f"Le fichier '{file_path}' n'est pas vide.")
+    print(f"file '{file_path}' is not empty.")
     
-    # Vérification du nombre de colonnes dans les 3 premières lignes non-en-tête
+    # Validate the number of columns in the first 3 non-header lines
     with open(file_path, 'r') as file:
         line_count = 0
         for line in file:
-            # Ignorer les lignes d'en-tête
+            # Ignore header
             if line.startswith('@'):
                 continue
 
-            # Compte le nombre de colonnes (séparées par des tabulations)
+            # Count number od colums separated by tabulation
             num_columns = len(line.strip().split('\t'))
 
             if num_columns < 11:
-                print(f"Erreur : La ligne '{line.strip()}' contient seulement {num_columns} colonnes.")
+                print(f"Error : line '{line.strip()}' only have {num_columns} colums.")
                 return False
 
-            # Compte jusqu'à 3 lignes
+            # Stop ofter line 3
             line_count += 1
             if line_count == 3:
                 break
 
-    print(f"Le fichier '{file_path}' respecte le nombre minimum de colonnes.")
+    print(f"file '{file_path}' has the expected number of colums.")
     return True
 
 ## 2/ Read, 
 
-## Dictionnaire des flags
+## flag dictionnary
 flags = {
     0: "read aligned to the reference in a forward strand",
     1: "template having multiple segments in sequencing",
@@ -111,9 +111,9 @@ flags = {
 
 def countReads(file_path):
     """
-    Analyse un fichier SAM pour compter différents types de lectures.
+    Annalyse sam file to count different types of reads
     
-    :param file_path: Chemin du fichier SAM à analyser
+    :param file_path:  Validate the number of columns in the first 3 non-header lines
     """
     if not file_verifier(file_path):
         return
@@ -125,7 +125,7 @@ def countReads(file_path):
 
     with open(file_path, 'r') as file:
         for line in file:
-            # Ignorer les lignes d'en-tête
+            # Ignore header
             if line.startswith('@'):
                 continue
             
@@ -133,18 +133,18 @@ def countReads(file_path):
             fields = line.strip().split('\t')
             flag = int(fields[1])
 
-            # Vérifier les flags
-            if flag & 4:  # Non mappé
+            # Check flags
+            if flag & 4:  # unmapped
                 unmapped_reads += 1
-            elif flag & 1024:  # Duplicata
+            elif flag & 1024:  # Duplicated reads
                 duplicated_reads += 1
             else:
-                mapped_reads += 1
+                mapped_reads += 1 #mapped reads
 
-    print(f"Le total de reads est: {total_reads}")
-    print(f"Le total de reads non mappés est: {unmapped_reads}")
-    print(f"Le total de reads en duplicité est: {duplicated_reads}")
-    print(f"Le total de reads mappés est: {mapped_reads}")
+    print(f"Total number of reads : {total_reads}")
+    print(f"Total number of unmapped read : {unmapped_reads}")
+    print(f"Total number of duplicated read : {duplicated_reads}")
+    print(f"Total number of mapped read : {mapped_reads}")
 
 
 ## read per chromosom
@@ -153,36 +153,37 @@ def readPerChrom(file_path):
     if not fileVerifier(file_path):
     return
 
-    # Initialiser un dictionnaire pour stocker le nombre de reads mappés par chromosome
+    # Initialize a dictionnary to stock the number of reads per chromosome 
+
 chromosome_counts = {}
 
-# Ouvrir le fichier SAM en mode lecture
+# Open file in reading mode 
 with open(file_path, 'r') as file:
     for line in file:
-        # Ignorer les lignes d'en-tête (commencent par '@')
+        # Ignore header 
         if line.startswith('@'):
             continue
 
-        # Diviser la ligne en champs en utilisant une tabulation comme séparateur
+        # Split ligne using tabulation as separator 
         fields = line.strip().split('\t')
         
-        # Extraire le FLAG (champ 2) et le convertir en entier
+        # Extract Flag (flag 2)
         flag = int(fields[1])
         
-        # Extraire le chromosome (champ 3, aussi appelé RNAME)
+        # Extract the chromosome (RNAME)
         chromosome = fields[2]
 
-        # Vérifier si le read est mappé :
-        # FLAG 4 indique que le read est "unmapped", donc si le bit 4 n'est pas défini (flag & 4 == 0), le read est mappé
+        # Check if read is mapped :
+        # FLAG 4 is for unmapped reads , so if  bit 4 is not defined  (flag & 4 == 0), the read is mapped
         if flag & 4 == 0:  
-            # Si le chromosome est déjà dans le dictionnaire, incrémenter le compteur pour ce chromosome
+            # If chromosome already in the dictionnary, add 1 to the chromosome counter 
             if chromosome in chromosome_counts:
                 chromosome_counts[chromosome] += 1
-            # Sinon, initialiser le compteur à 1 pour ce chromosome
+            # eles the counter receive the value 1  
             else:
                 chromosome_counts[chromosome] = 1
 
-# Retourner le dictionnaire contenant le nombre de reads mappés par chromosome
+# Return chromosome counter 
 return chromosome_counts
 
 
