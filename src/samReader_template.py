@@ -4,22 +4,10 @@
 ############### IMPORT MODULES ############### 
 import matplotlib.pyplot as plt
 import pandas as pd
-# import os, sys, re ....
+import os,re,sys,argparse
 
-# __authors__ = ("GONCALVES RIBEIRO Alessandra, IBRAHIM AMOUKOU Najat")
-# __contact__ = ("alessandra.goncalves-ribeiro@etu.umontpellier.fr, najat.ibrahim-amoukou@etu.umontpellier.fr")
-# __version__ = "0.0.1"
-# __date__ = "10/15/2024"
-# __licence__ ="This program is free software: you can redistribute it and/or modify
-#         it under the terms of the GNU General Public License as published by
-#         the Free Software Foundation, either version 3 of the License, or
-#         (at your option) any later version.
-#         This program is distributed in the hope that it will be useful,
-#         but WITHOUT ANY WARRANTY; without even the implied warranty of
-#         MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-#         GNU General Public License for more details.
-#         You should have received a copy of the GNU General Public License
-#         along with this program. If not, see <https://www.gnu.org/licenses/>."
+
+
 
 
      
@@ -39,15 +27,6 @@ import pandas as pd
 ## 1/ Check, 
 
 
-
-
-import os
-import re
-import sys
-import argparse
-
-# File path
-# file_path = '/home/najat/mapping/src/mapping.sam'
 
 # --- Functions ---
 
@@ -97,6 +76,27 @@ def fileVerifier(file_path):
 
     print(f"File '{file_path}' has the expected number of columns.")
     return True
+
+# Read
+
+## flag dictionnary
+flags = {
+    0: "read aligned to the reference in a forward strand",
+    1: "template having multiple segments in sequencing",
+    2: "each segment properly aligned according to the aligner",
+    4: "read unmapped",
+    8: "mate unmapped",
+    16: "read aligned to the reverse strand",
+    32: "mate aligned to the reverse strand",
+    64: "the first segment in the template",
+    128: "the second segment in the template",
+    256: "not primary alignment",
+    512: "read fails platform/vendor quality checks",
+    1024: "PCR or optical duplicate",
+    2048: "supplementary alignment"
+}
+
+
 
 
 def countReads(file_path):
@@ -191,46 +191,6 @@ def readPerMAPQ(file_path):
 
 
 
-# --- Main Execution ---
-
-# def main():
-#     # Verify the file
-#     if fileVerifier(file_path):
-#         # Count reads
-#         countReads(file_path)
-
-#         # Count reads per chromosome
-#         readPerChrom(file_path)
-
-#         # Count reads per MAPQ
-#         readPerMAPQ(file_path)
-
-
-# if __name__ == "__main__":
-#     main()
-
-
-def main():
-    parser = argparse.ArgumentParser(description="Analyze a SAM file and provide various statistics.")
-    parser.add_argument('-i', '--input', required=True, help="Path to the SAM file.")
-    parser.add_argument('-cR','--count-reads', action='store_true', help="Count the total, mapped, unmapped, and duplicated reads.")
-    parser.add_argument('-rpC','--reads-per-chrom', action='store_true', help="Count reads per chromosome.")
-    parser.add_argument('-rpM','--reads-per-mapq', action='store_true', help="Count reads per MAPQ score.")
-    
-    args = parser.parse_args()
-
-    if not fileVerifier(args.input):
-        return
-
-    if args.count_reads:
-        countReads(args.input)
-    if args.reads_per_chrom:
-        readPerChrom(args.input)
-    if args.reads_per_mapq:
-        readPerMAPQ(args.input)
-
-if __name__ == "__main__":
-    main()
 
 def count_reads_by_flag(file_path):
     """
@@ -281,9 +241,9 @@ def plot_flag_counts(flag_counts):
     plt.show()
 
 # Example usage
-file_path = 'C:/Users/aless/Downloads/mapping/src/mapping.sam'
-flag_counts = count_reads_by_flag(file_path)
-plot_flag_counts(flag_counts)
+# file_path = 'C:/Users/aless/Downloads/mapping/src/mapping.sam'
+# flag_counts = count_reads_by_flag(file_path)
+# plot_flag_counts(flag_counts)
 
 
 
@@ -293,7 +253,7 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
 import pandas as pd
 
-def save_results_to_html(flag_counts, plot_filename='plot.png', html_filename='results.html'):
+def saveResults(flag_counts, plot_filename='plot.png', html_filename='results.html'):
     """
     Save the flag counts and plot to an HTML file.
     
@@ -349,12 +309,43 @@ def save_results_to_html(flag_counts, plot_filename='plot.png', html_filename='r
         html_file.write(html_content)
     print(f"Results saved to {html_filename}")
 
-# Example usage
-save_results_to_html(flag_counts)
+# # Example usage
+# save_results_to_html(flag_counts)
 
 ## 3/ Store,
 
+# Main script
+
+def main():
+    parser = argparse.ArgumentParser(description="Analyse de fichier SAM.")
+    parser.add_argument('-i', '--input', required=True, help="Chemin vers le fichier SAM.")
+    parser.add_argument('-cR','--count-reads', action='store_true', help="Compter les lectures (totales, mappées, etc.).")
+    parser.add_argument('-rC','--reads-per-chrom', action='store_true', help="Compter les lectures par chromosome.")
+    parser.add_argument('-rMQ','--reads-per-mapq', action='store_true', help="Compter les lectures par MAPQ.")
+    parser.add_argument('-cRF','--count-reads-by-flag', action='store_true', help="Compter les lectures par valeur de FLAG.")
+    parser.add_argument('-sR','--saveResults', action='store_true', help="Sauvegarder les résultats et graphiques dans un fichier HTML.")
+
+    args = parser.parse_args()
+
+    if not fileVerifier(args.input):
+        return
+
+    if args.count_reads:
+        countReads(args.input)
+    if args.reads_per_chrom:
+        readPerChrom(args.input)
+    if args.reads_per_mapq:
+        readPerMAPQ(args.input)
+    if args.count_reads_by_flag:
+        flag_counts = count_reads_by_flag(args.input)
+        if args.saveResults:
+            saveResults(flag_counts)
+
+if __name__ == "__main__":
+    main()
 ## 4/ Analyse 
+
+
 
 # #### Convert the flag into binary ####
 #  def flagBinary(flag) :
@@ -499,3 +490,5 @@ save_results_to_html(flag_counts)
 
 # if __name__ == "__main__":
 #     main(sys.argv[1:])
+
+
