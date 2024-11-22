@@ -1,6 +1,10 @@
 #!/usr/bin/python3
 #-*- coding : utf-8 -*-
 
+############### IMPORT MODULES ############### 
+import matplotlib.pyplot as plt
+import pandas as pd
+# import os, sys, re ....
 
 # __authors__ = ("GONCALVES RIBEIRO Alessandra, IBRAHIM AMOUKOU Najat")
 # __contact__ = ("alessandra.goncalves-ribeiro@etu.umontpellier.fr, najat.ibrahim-amoukou@etu.umontpellier.fr")
@@ -20,7 +24,6 @@
 
      
     ### OPTION LIST:
-    
         ##-h or --help : help information
         ##-i or --input: input file (.sam)
         ##-o or --output: output name files (.txt)
@@ -31,8 +34,12 @@
         ##SamReader.py -i or --input <file> -o or --output <name> # Launch SamReader to analyze a samtools file (.sam) and print the result in the file called <name>
   
 
+############### FUNCTIONS TO :
 
-############### IMPORT MODULES ###############
+## 1/ Check, 
+
+
+
 
 import os
 import re
@@ -225,19 +232,132 @@ def main():
 if __name__ == "__main__":
     main()
 
+def count_reads_by_flag(file_path):
+    """
+    Count the number of reads for each flag value in a SAM file.
+    
+    Args:
+    file_path (str): Path to the .sam file.
+    
+    Returns:
+    dict: A dictionary with flag values as keys and counts as values.
+    """
+    flag_counts = {}
+
+    with open(file_path, 'r') as file:
+        for line in file:
+            if line.startswith('@'):  # Skip header lines in SAM file
+                continue
+            
+            columns = line.split('\t')
+            flag = int(columns[1])  # The flag is the second column
+            
+            # Count occurrences of each flag
+            if flag in flag_counts:
+                flag_counts[flag] += 1
+            else:
+                flag_counts[flag] = 1
+    
+    return flag_counts
+
+def plot_flag_counts(flag_counts):
+    """
+    Plot the count of reads for each flag value.
+    
+    Args:
+    flag_counts (dict): A dictionary with flag values as keys and counts as values.
+    """
+    # Convert the dictionary to a pandas DataFrame for easy plotting
+    df = pd.DataFrame(list(flag_counts.items()), columns=['Flag', 'Count'])
+    
+    # Plotting the data
+    plt.figure(figsize=(10, 6))
+    plt.bar(df['Flag'].astype(str), df['Count'], color='skyblue')
+    plt.xlabel('Flag Value')
+    plt.ylabel('Read Count')
+    plt.title('Number of Reads for Each Flag Value')
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.show()
+
+# Example usage
+file_path = 'C:/Users/aless/Downloads/mapping/src/mapping.sam'
+flag_counts = count_reads_by_flag(file_path)
+plot_flag_counts(flag_counts)
+
+
+
+
+# Data vizualizing
+from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+from matplotlib.figure import Figure
+import pandas as pd
+
+def save_results_to_html(flag_counts, plot_filename='plot.png', html_filename='results.html'):
+    """
+    Save the flag counts and plot to an HTML file.
+    
+    Args:
+    flag_counts (dict): Dictionary of flag counts.
+    plot_filename (str): The name of the image file for the plot.
+    html_filename (str): The name of the HTML file to save.
+    """
+    # Create the plot
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.bar(flag_counts.keys(), flag_counts.values(), color='skyblue')
+    ax.set_xlabel('Flag Value')
+    ax.set_ylabel('Read Count')
+    ax.set_title('Number of Reads for Each Flag Value')
+    
+    # Save the plot as an image
+    canvas = FigureCanvas(fig)
+    canvas.print_figure(plot_filename)
+
+    # Generate HTML content
+    html_content = f"""
+    <html>
+        <head>
+            <title>Read Analysis Results</title>
+        </head>
+        <body>
+            <h1>Read Analysis</h1>
+            <h2>Flag Counts</h2>
+            <table border="1">
+                <tr>
+                    <th>Flag Value</th>
+                    <th>Read Count</th>
+                </tr>
+    """
+    for flag, count in flag_counts.items():
+        html_content += f"""
+                <tr>
+                    <td>{flag}</td>
+                    <td>{count}</td>
+                </tr>
+        """
+    
+    html_content += f"""
+            </table>
+            <h2>Graph of Read Counts by Flag</h2>
+            <img src="{plot_filename}" alt="Flag Counts Graph">
+        </body>
+    </html>
+    """
+    
+    # Save HTML file
+    with open(html_filename, 'w') as html_file:
+        html_file.write(html_content)
+    print(f"Results saved to {html_filename}")
+
+# Example usage
+save_results_to_html(flag_counts)
 
 ## 3/ Store,
 
-
-
-
-
-
-
-# ## 4/ Analyse 
+## 4/ Analyse 
 
 # #### Convert the flag into binary ####
-# def flagBinary(flag) :
+#  def flagBinary(flag) :
 
 #     flagB = bin(int(flag)) # Transform the integer into a binary.
 #     flagB = flagB[2:] # Remove '0b' Example: '0b1001101' > '1001101'
@@ -361,17 +481,21 @@ if __name__ == "__main__":
 
 
  
-# #### Summarise the results ####
+# ### Summarise the results ####
 
 # def Summary(fileName):
     
    
 
-# # #### Main function ####
 
-#  def main(argv):
+
+
+# #### Main function ####
+
+# def main(argv):
     
 
-# # ############### LAUNCH THE SCRIPT ###############
-#     if __name__ == "__main__":
+# ############## LAUNCH THE SCRIPT ###############
+
+# if __name__ == "__main__":
 #     main(sys.argv[1:])
