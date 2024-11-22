@@ -37,9 +37,10 @@
 import os
 import re
 import sys
+import argparse
 
 # File path
-file_path = '/home/najat/mapping/src/mapping.sam'
+# file_path = '/home/najat/mapping/src/mapping.sam'
 
 # --- Functions ---
 
@@ -185,22 +186,44 @@ def readPerMAPQ(file_path):
 
 # --- Main Execution ---
 
+# def main():
+#     # Verify the file
+#     if fileVerifier(file_path):
+#         # Count reads
+#         countReads(file_path)
+
+#         # Count reads per chromosome
+#         readPerChrom(file_path)
+
+#         # Count reads per MAPQ
+#         readPerMAPQ(file_path)
+
+
+# if __name__ == "__main__":
+#     main()
+
+
 def main():
-    # Verify the file
-    if fileVerifier(file_path):
-        # Count reads
-        countReads(file_path)
+    parser = argparse.ArgumentParser(description="Analyze a SAM file and provide various statistics.")
+    parser.add_argument('-i', '--input', required=True, help="Path to the SAM file.")
+    parser.add_argument('-cR','--count-reads', action='store_true', help="Count the total, mapped, unmapped, and duplicated reads.")
+    parser.add_argument('-rpC','--reads-per-chrom', action='store_true', help="Count reads per chromosome.")
+    parser.add_argument('-rpM','--reads-per-mapq', action='store_true', help="Count reads per MAPQ score.")
+    
+    args = parser.parse_args()
 
-        # Count reads per chromosome
-        readPerChrom(file_path)
+    if not fileVerifier(args.input):
+        return
 
-        # Count reads per MAPQ
-        readPerMAPQ(file_path)
-
+    if args.count_reads:
+        countReads(args.input)
+    if args.reads_per_chrom:
+        readPerChrom(args.input)
+    if args.reads_per_mapq:
+        readPerMAPQ(args.input)
 
 if __name__ == "__main__":
     main()
-
 
 
 ## 3/ Store,
