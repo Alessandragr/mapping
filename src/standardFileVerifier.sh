@@ -11,9 +11,9 @@
 
 # Avec quelle qualité les reads sont-ils mappés ? Compter les reads pour chaque score de qualité ou par tranche de valeurs de score de mapping. done
 
-# En fonction des questions 2 et 4, implémenter des paramètres pour filtrer les données. Par exemple, ne conserver que les reads complètement mappés ou ceux avec un score de qualité de mapping inférieur à 30.
+# En fonction des questions 2 et 4, implémenter des paramètres pour filtrer les données. Par exemple, ne conserver que les reads complètement mappés ou ceux avec un score de qualité de mapping inférieur à 30. done
 
-# Prendre les reads, réaliser le mapping avec un génome de référence et aligner les résultats.
+# Prendre les reads, réaliser le mapping avec un génome de référence et aligner les résultats. to test
 
 # EXTRA : Projet additionnel : Coder pour enregistrer le **CIGAR** et stocker ces informations afin de connaître le nombre de délétions, insertions, etc., dans chaque séquence.
 
