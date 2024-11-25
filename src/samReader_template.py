@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 import os,re,sys,argparse
-from flags import flags
+
 
 
 
@@ -15,6 +15,7 @@ from flags import flags
      # OPTION LIST:
 # -h or --help: Displays help information.
 # -i or --input: Specifies the path to the input SAM file (.sam).
+# -o or --output: Specifies the path to the output file 
 # -cR or --count-reads: Counts total reads, mapped reads, unmapped reads,duplicated reads, with a filtering option on the mapping quality.
 # -rC or --reads-per-chrom: Counts the number of reads per chromosome.
 # -rMQ or --reads-per-mapq: Counts the number of reads for each MAPQ score.
@@ -36,15 +37,11 @@ from flags import flags
 
 
 
-
-
- ## Se não está bem mapeado, a coluna no gráfico deve aparecer em vermelho. Além disso, deve aparecer todos os valores de flag ao invés de um intervalo. 
-
 ############### FUNCTIONS TO :
 
-################################################# 1/ Check, 
+## 1/ Check, 
 
-# --- Functions ---
+
 
 def fileVerifier(filePath):
     """
@@ -114,10 +111,9 @@ flags = {
 }
 
 
-############################################################# Read
 
 
-
+## Count reads and filter
 
 
 def countReads(file_path, minQ=0):
@@ -358,7 +354,7 @@ def executeFlagStats():
 
 
 
-
+##Filter sam file by mapping quality
 
 
 def filterSam(file_path, output_file, minQ=30):
@@ -384,6 +380,8 @@ def filterSam(file_path, output_file, minQ=30):
             if mapq >= minQ:
                 outfile.write(line)
 
+
+##Filter sam file by only keeping mapped reads
 
 def mappedRead(file_path, output_file):
     """
@@ -412,27 +410,36 @@ def mappedRead(file_path, output_file):
 
 
 
-# # Example usage
-# save_results_to_html(flag_counts)
-
-
 ## 3/ Store,
 
 # Main script
+import argparse
 
 def main():
-    
-
     parser = argparse.ArgumentParser(description="Analyze a SAM file and provide various statistics.")
+    
+    # Arguments for file input and output
     parser.add_argument('-i', '--input', required=True, help="Path to the SAM file.")
+    parser.add_argument('-o', '--output', required=False, help="Path to the output SAM file.")
+    
+    # Arguments for read counting and analysis
     parser.add_argument('-cR', '--count-reads', action='store_true', help="Count reads (total, mapped, etc.).")
     parser.add_argument('-rC', '--reads-per-chrom', action='store_true', help="Count reads per chromosome.")
     parser.add_argument('-rMQ', '--reads-per-mapq', action='store_true', help="Count reads based on MAPQ scores.")
     parser.add_argument('-cRF', '--count-reads-by-flag', action='store_true', help="Count reads based on FLAG values.")
+    
+    # Arguments for saving results and generating output
     parser.add_argument('-sR', '--saveResults', action='store_true', help="Save results and graphs to an HTML file.")
-    parser.add_argument('-m', '--minQ', type=int, default=0, help="Minimum MAPQ score for filtering reads.")
+    
+    # Arguments for filtering and saving new SAM files
     parser.add_argument('-fS', '--filterSam', action='store_true', help="Filter SAM file by mapping quality")
     parser.add_argument('-mR', '--mappedRead', action='store_true', help="Filter SAM file by keeping mapped reads")
+    
+    # Argument for MAPQ score filtering
+    parser.add_argument('-m', '--minQ', type=int, default=0, help="Minimum MAPQ score for filtering reads.")
+    
+    # Argument for executing flag stats (calls executeFlagStats)
+    parser.add_argument('-eFS', '--execute-flag-stats', action='store_true', help="Execute Flag Stats analysis.")
 
     args = parser.parse_args()
 
@@ -441,7 +448,7 @@ def main():
         parser.print_help()
         return
 
-    # Verify the input file
+    # Verify the input file (this function should be defined elsewhere in your code)
     if not fileVerifier(args.input):
         return
 
@@ -453,15 +460,18 @@ def main():
     if args.reads_per_mapq:
         readPerMAPQ(args.input)
     if args.count_reads_by_flag:
-        flag_counts = count_reads_by_flag(args.input)
+        flag_counts = countReadsByFlags(args.input)
         if args.saveResults:
             saveResults(flag_counts)
     if args.filterSam:
-        filterSam(args.input,args.output,args.minQ)
+        filterSam(args.input, args.output, args.minQ)
+    if args.mappedRead:
+        mappedRead(args.input, args.output)
+    if args.execute_flag_stats:
+        executeFlagStats()
 
-    if args.  mappedRead:
-          mappedRead(args.input,args.output)
-      
+if __name__ == "__main__":
+    main()
 
 
 def executeFlagStats(filePath):
@@ -480,12 +490,6 @@ def executeFlagStats(filePath):
     plotFlagCounts(flagCounts)
     
     return flagCounts
-
-
-   
-if __name__ == "__main__":
-    main()
-
 
 ## 4/ Analyse 
 
