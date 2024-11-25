@@ -1,3 +1,5 @@
 mapping.sam
+MAPPED_READS.sam
+filtered.sam
 __pycache__/
 *.pyc
