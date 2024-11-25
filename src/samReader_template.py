@@ -5,8 +5,9 @@
 
 import matplotlib.pyplot as plt
 import pandas as pd
+import numpy as np
 import os,re,sys,argparse
-
+from flags import flags
 
 
 
@@ -34,42 +35,43 @@ import os,re,sys,argparse
 # SamReader.py -i <file> -fS -o <outpufile> -m <mappingQuality>  # Filter SAM file by mapping quality and create a filterd sam file.
 
 
-  
+
+
+
+ ## Se não está bem mapeado, a coluna no gráfico deve aparecer em vermelho. Além disso, deve aparecer todos os valores de flag ao invés de um intervalo. 
 
 ############### FUNCTIONS TO :
 
-## 1/ Check, 
-
-
+################################################# 1/ Check, 
 
 # --- Functions ---
 
-def fileVerifier(file_path):
+def fileVerifier(filePath):
     """
     Check if the file is a valid SAM file.
     
-    :param file_path: path of the file to check
+    :param filePath: path of the file to check
     :return: True if the file is valid, else False
     """
     # Check if it's a regular file
-    if not os.path.isfile(file_path):
-        print(f"Error: {file_path} is not valid.")
+    if not os.path.isfile(filePath):
+        print(f"Error: {filePath} is not valid.")
         return False
 
     # Check if the file has a .sam extension
-    if not file_path.endswith('.sam'):
-        print(f"Error: {file_path} doesn't have a '.sam' extension.")
+    if not filePath.endswith('.sam'):
+        print(f"Error: {filePath} doesn't have a '.sam' extension.")
         return False
 
     # Check if the file is empty
-    if os.path.getsize(file_path) == 0:
-        print(f"Error: file '{file_path}' is empty.")
+    if os.path.getsize(filePath) == 0:
+        print(f"Error: file '{filePath}' is empty.")
         return False
 
-    print(f"File '{file_path}' is valid and not empty.")
+    print(f"File '{filePath}' is valid and not empty.")
 
     # Validate the number of columns in the first 3 non-header lines
-    with open(file_path, 'r') as file:
+    with open(filePath, 'r') as file:
         line_count = 0
         for line in file:
             # Ignore headers
@@ -77,10 +79,10 @@ def fileVerifier(file_path):
                 continue
 
             # Count the number of columns separated by tabulation
-            num_columns = len(line.strip().split('\t'))
+            numColumns = len(line.strip().split('\t'))
 
-            if num_columns < 11:
-                print(f"Error: line '{line.strip()}' only has {num_columns} columns.")
+            if numColumns < 11:
+                print(f"Error: line '{line.strip()}' only has {numColumns} columns.")
                 return False
 
             # Stop after 3 lines
@@ -88,8 +90,9 @@ def fileVerifier(file_path):
             if line_count == 3:
                 break
 
-    print(f"File '{file_path}' has the expected number of columns.")
+    print(f"File '{filePath}' has the expected number of columns.")
     return True
+
 
 # 2/ Read
 
@@ -111,7 +114,7 @@ flags = {
 }
 
 
-
+############################################################# Read
 
 
 
@@ -124,6 +127,7 @@ def countReads(file_path, minQ=0):
 
     :param file_path: Path to the SAM file.
     :param minQ: Minimum MAPQ score for filtering reads. Defaults to 0.
+
     """
     filtered_reads = 0
     total_reads = 0
@@ -132,7 +136,7 @@ def countReads(file_path, minQ=0):
     mapped_reads = 0
     flag_details = {}  # Dictionary to count occurrences of each flag description
 
-    with open(file_path, 'r') as file:
+    with open(filePath, 'r') as file:
         for line in file:
             # Ignore header lines
             if line.startswith('@'):
@@ -173,16 +177,16 @@ def countReads(file_path, minQ=0):
 
 
 
-def readPerChrom(file_path):
+def readPerChrom(filePath):
     """
     Count the number of reads mapped to each chromosome.
     
-    :param file_path: path to the SAM file
+    :param filePath: path to the SAM file
     :return: dictionary with counts of reads per chromosome
     """
-    chromosome_counts = {}
+    chromosomeCounts = {}
 
-    with open(file_path, 'r') as file:
+    with open(filePath, 'r') as file:
         for line in file:
             # Ignore headers
             if line.startswith('@'):
@@ -193,23 +197,23 @@ def readPerChrom(file_path):
 
             flag = int(fields[1])
             if flag & 4 == 0:  # if bit 4 is not set, the read is mapped
-                chromosome_counts[chromosome] = chromosome_counts.get(chromosome, 0) + 1
+                chromosomeCounts[chromosome] = chromosomeCounts.get(chromosome, 0) + 1
 
     print("\n--- Reads per Chromosome ---")
-    for chrom, count in chromosome_counts.items():
+    for chrom, count in chromosomeCounts.items():
         print(f"{chrom}: {count}")
 
 
-def readPerMAPQ(file_path):
+def readPerMAPQ(filePath):
     """
     Count the number of reads for each MAPQ score.
     
-    :param file_path: path to the SAM file
+    :param filePath: path to the SAM file
     :return: dictionary with counts of reads per MAPQ score
     """
     MappingQ_counts = {}
 
-    with open(file_path, 'r') as file:
+    with open(filePath, 'r') as file:
         for line in file:
             if line.startswith('@'):
                 continue
@@ -227,22 +231,19 @@ def readPerMAPQ(file_path):
 
 
 
-
-
-
-def count_reads_by_flag(file_path):
+def countReadsByFlags(filePath):
     """
     Count the number of reads for each flag value in a SAM file.
     
     Args:
-    file_path (str): Path to the .sam file.
+    filePath (str): Path to the .sam file.
     
     Returns:
     dict: A dictionary with flag values as keys and counts as values.
     """
-    flag_counts = {}
+    flagCounts = {}
 
-    with open(file_path, 'r') as file:
+    with open(filePath, 'r') as file:
         for line in file:
             if line.startswith('@'):  # Skip header lines in SAM file
                 continue
@@ -251,22 +252,24 @@ def count_reads_by_flag(file_path):
             flag = int(columns[1])  # The flag is the second column
             
             # Count occurrences of each flag
-            if flag in flag_counts:
-                flag_counts[flag] += 1
+            if flag in flagCounts:
+                flagCounts[flag] += 1
             else:
-                flag_counts[flag] = 1
+                flagCounts[flag] = 1
     
-    return flag_counts
+    return flagCounts
 
-def plot_flag_counts(flag_counts):
+
+
+def plotFlagCounts(flagCounts):
     """
     Plot the count of reads for each flag value.
     
     Args:
-    flag_counts (dict): A dictionary with flag values as keys and counts as values.
+    flagCounts (dict): A dictionary with flag values as keys and counts as values.
     """
     # Convert the dictionary to a pandas DataFrame for easy plotting
-    df = pd.DataFrame(list(flag_counts.items()), columns=['Flag', 'Count'])
+    df = pd.DataFrame(list(flagCounts.items()), columns=['Flag', 'Count'])
     
     # Plotting the data
     plt.figure(figsize=(10, 6))
@@ -279,37 +282,37 @@ def plot_flag_counts(flag_counts):
     plt.show()
 
 # Example usage
-# file_path = 'C:/Users/aless/Downloads/mapping/src/mapping.sam'
-# flag_counts = count_reads_by_flag(file_path)
-# plot_flag_counts(flag_counts)
+# filePath = 'C:/Users/aless/Downloads/mapping/src/mapping.sam'
+# flagCounts = countReadsByFlags(filePath)
+# plotFlagCounts(flagCounts)
 
 
+###################################Data vizualizing
 
 
-# Data vizualizing
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
 import pandas as pd
 
-def saveResults(flag_counts, plot_filename='plot.png', html_filename='results.html'):
+def saveResults(flagCounts, plotFileName='plot.png', htmlFileName='results.html'):
     """
     Save the flag counts and plot to an HTML file.
     
     Args:
-    flag_counts (dict): Dictionary of flag counts.
-    plot_filename (str): The name of the image file for the plot.
-    html_filename (str): The name of the HTML file to save.
+    flagCounts (dict): Dictionary of flag counts.
+    plotFileName (str): The name of the image file for the plot.
+    htmlFileName (str): The name of the HTML file to save.
     """
     # Create the plot
     fig, ax = plt.subplots(figsize=(10, 6))
-    ax.bar(flag_counts.keys(), flag_counts.values(), color='skyblue')
+    ax.bar(flagCounts.keys(), flagCounts.values(), color='skyblue')
     ax.set_xlabel('Flag Value')
     ax.set_ylabel('Read Count')
     ax.set_title('Number of Reads for Each Flag Value')
     
     # Save the plot as an image
     canvas = FigureCanvas(fig)
-    canvas.print_figure(plot_filename)
+    canvas.print_figure(plotFileName)
 
     # Generate HTML content
     html_content = f"""
@@ -326,7 +329,7 @@ def saveResults(flag_counts, plot_filename='plot.png', html_filename='results.ht
                     <th>Read Count</th>
                 </tr>
     """
-    for flag, count in flag_counts.items():
+    for flag, count in flagCounts.items():
         html_content += f"""
                 <tr>
                     <td>{flag}</td>
@@ -337,15 +340,26 @@ def saveResults(flag_counts, plot_filename='plot.png', html_filename='results.ht
     html_content += f"""
             </table>
             <h2>Graph of Read Counts by Flag</h2>
-            <img src="{plot_filename}" alt="Flag Counts Graph">
+            <img src="{plotFileName}" alt="Flag Counts Graph">
         </body>
     </html>
     """
     
     # Save HTML file
-    with open(html_filename, 'w') as html_file:
+    with open(htmlFileName, 'w') as html_file:
         html_file.write(html_content)
-    print(f"Results saved to {html_filename}")
+    print(f"Results saved to {htmlFileName}")
+
+
+
+def executeFlagStats():
+   countReadsByFlags(filePath)
+   plotFlagCounts(flagCounts)
+
+
+
+
+
 
 def filterSam(file_path, output_file, minQ=30):
     """
@@ -401,9 +415,11 @@ def mappedRead(file_path, output_file):
 # # Example usage
 # save_results_to_html(flag_counts)
 
+
 ## 3/ Store,
 
 # Main script
+
 def main():
     
 
@@ -448,6 +464,25 @@ def main():
       
 
 
+def executeFlagStats(filePath):
+    """
+    Exécuter l'analyse des statistiques sur les flags du fichier SAM.
+    
+    Args:
+    filePath (str): Chemin du fichier SAM à analyser.
+    
+    Returns:
+    dict: Un dictionnaire des comptes de flags.
+    """
+    # Chamar a função de contagem de flags
+    flagCounts = countReadsByFlags(filePath)
+    # Chamar a função de plot (se necessário)
+    plotFlagCounts(flagCounts)
+    
+    return flagCounts
+
+
+   
 if __name__ == "__main__":
     main()
 
