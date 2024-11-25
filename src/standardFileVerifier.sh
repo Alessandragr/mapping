@@ -15,6 +15,8 @@
 
 # Prendre les reads, réaliser le mapping avec un génome de référence et aligner les résultats. to test
 
+# Points for improvement: If it is not well mapped, the column in the chart should appear in red. Additionally, all flag values should be displayed instead of a range.
+
 # EXTRA : Projet additionnel : Coder pour enregistrer le **CIGAR** et stocker ces informations afin de connaître le nombre de délétions, insertions, etc., dans chaque séquence.
 
 # EXTRA : Projet additionnel : Analyser la qualité du CIGAR. Plus un CIGAR est long, plus la qualité du read est incertaine, tandis que les CIGAR plus courts indiquent un alignement plus sûr avec le génome de référence.
