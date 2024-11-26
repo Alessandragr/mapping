@@ -1,16 +1,88 @@
 {
   "todo": [
     {
-      "creation_time": "2024-10-25T15:27:00.856Z",
+      "assignedTo": {
+        "name": "Najatamk"
+      },
+      "creation_time": "2024-11-26T08:43:24.551Z",
+      "id": "13",
+      "references": [],
+      "title": "EXTRA : annalyse du cigar"
+    },
+    {
+      "assignedTo": {
+        "name": "Najatamk"
+      },
+      "creation_time": "2024-11-26T08:46:31.167Z",
+      "id": "15",
+      "references": [],
+      "title": "EXTRA :comparaison python / bash"
+    },
+    {
+      "assignedTo": {
+        "name": "Najatamk"
+      },
+      "creation_time": "2024-11-26T08:44:15.463Z",
       "description": {
-        "content": "Où les reads sont-ils mappés ? Est-ce que l’alignement est homogène le long de la séquence de référence ? Compter le nombre de reads par position sur le chromosome.\n",
+        "content": "faire appel au dictionnaire pour les fonctions qui en ont besoin",
         "mime": "text/markdown"
       },
-      "id": "6",
-      "prio": 8,
+      "id": "14",
       "references": [],
-      "title": "Verifier où les reads sont-ils mappés"
+      "title": "flag dictionnary"
     },
+    {
+      "assignedTo": {
+        "name": "Najatamk"
+      },
+      "creation_time": "2024-11-26T08:48:40.769Z",
+      "id": "18",
+      "references": [],
+      "title": "integrer la partie 4"
+    },
+    {
+      "assignedTo": {
+        "name": "Najatamk"
+      },
+      "creation_time": "2024-11-26T08:42:52.276Z",
+      "id": "12",
+      "references": [],
+      "title": "mapping avec sequence de reference"
+    },
+    {
+      "assignedTo": {
+        "name": "Najatamk"
+      },
+      "creation_time": "2024-11-26T08:46:36.560Z",
+      "id": "16",
+      "references": [],
+      "title": "rapport"
+    },
+    {
+      "assignedTo": {
+        "name": "Najatamk"
+      },
+      "creation_time": "2024-11-26T08:46:43.063Z",
+      "id": "17",
+      "references": [],
+      "title": "readme"
+    },
+    {
+      "assignedTo": {
+        "name": "Najatamk"
+      },
+      "creation_time": "2024-11-26T08:41:18.693Z",
+      "description": {
+        "content": "visualiser les stats dans une page html",
+        "mime": "text/markdown"
+      },
+      "id": "11",
+      "references": [],
+      "title": "vizualisation"
+    }
+  ],
+  "in-progress": [],
+  "testing": [
     {
       "creation_time": "2024-10-25T15:28:01.113Z",
       "description": {
@@ -55,20 +127,7 @@
       "title": "D'autres filtre pour les données"
     }
   ],
-  "in-progress": [
-    {
-      "creation_time": "2024-10-25T15:25:28.292Z",
-      "description": {
-        "content": "Combien de reads sont mappés ? Compter le nombre de reads en fonction du flag (colonne #2).",
-        "mime": "text/markdown"
-      },
-      "id": "4",
-      "prio": 9,
-      "references": [],
-      "title": "Verifier combien de reads sont mappés"
-    }
-  ],
-  "testing": [
+  "done": [
     {
       "creation_time": "2024-10-25T16:55:10.788Z",
       "id": "10",
@@ -99,6 +158,28 @@
       "title": "Verifier le nombre correct de colonnes"
     },
     {
+      "creation_time": "2024-10-25T15:25:28.292Z",
+      "description": {
+        "content": "Combien de reads sont mappés ? Compter le nombre de reads en fonction du flag (colonne #2).",
+        "mime": "text/markdown"
+      },
+      "id": "4",
+      "prio": 9,
+      "references": [],
+      "title": "Verifier combien de reads sont mappés"
+    },
+    {
+      "creation_time": "2024-10-25T15:27:00.856Z",
+      "description": {
+        "content": "Où les reads sont-ils mappés ? Est-ce que l’alignement est homogène le long de la séquence de référence ? Compter le nombre de reads par position sur le chromosome.\n",
+        "mime": "text/markdown"
+      },
+      "id": "6",
+      "prio": 8,
+      "references": [],
+      "title": "Verifier où les reads sont-ils mappés"
+    },
+    {
       "creation_time": "2024-10-25T15:23:07.483Z",
       "description": {
         "content": "Le code doit recevoir une archive et vérifier si c'est bien un fichier archive (et non un dossier) de type `.sam`.  Renvoyer une erreur si c'est le cas.",
@@ -108,6 +189,5 @@
       "references": [],
       "title": "Recevoir une archive et vérifier si c'est un fichier de type `.sam`"
     }
-  ],
-  "done": []
+  ]
 }
