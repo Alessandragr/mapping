@@ -2,23 +2,42 @@
 #-*- coding : utf-8 -*-
 
 ############### IMPORT MODULES ############### 
-
+from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 import os,re,sys,argparse
+
 from flags import flags
 
+## flag dictionnary
+flags = {
+    0: "read aligned to the reference in a forward strand",
+    1: "template having multiple segments in sequencing",
+    2: "each segment properly aligned according to the aligner",
+    4: "read unmapped",
+    8: "mate unmapped",
+    16: "read aligned to the reverse strand",
+    32: "mate aligned to the reverse strand",
+    64: "the first segment in the template",
+    128: "the second segment in the template",
+    256: "not primary alignment",
+    512: "read fails platform/vendor quality checks",
+    1024: "PCR or optical duplicate",
+    2048: "supplementary alignment"
+}
 
 
 
-     # OPTION LIST:
+# OPTION LIST:
 # -h or --help: Displays help information.
 # -i or --input: Specifies the path to the input SAM file (.sam).
-# -cR or --count-reads: Counts total reads, mapped reads, unmapped reads,duplicated reads, with a filtering option on the mapping quality.
-# -rC or --reads-per-chrom: Counts the number of reads per chromosome.
-# -rMQ or --reads-per-mapq: Counts the number of reads for each MAPQ score.
-# -cRF or --count-reads-by-flag: Counts the number of reads for each FLAG value.
+# -o or --output: Specifies the path to the output file 
+# -cR or --countReads: Counts total reads, mapped reads, unmapped reads,duplicated reads, with a filtering option on the mapping quality.
+# -rC or --readPerChrom: Counts the number of reads per chromosome.
+# -rMQ or --readPerMAPQ: Counts the number of reads for each MAPQ score.
+# -cRF or --countReadsByFlags: Counts the number of reads for each FLAG value.
 # -sR or --save-results: Saves the results and associated plots to an HTML file.
 # -fS or  --filterSam: Filter SAM file by mapping quality and create a new filterd sam file.
 
@@ -36,15 +55,11 @@ from flags import flags
 
 
 
+############################# FUNCTIONS TO :
+
+## 1/ Check, 
 
 
- ## Se não está bem mapeado, a coluna no gráfico deve aparecer em vermelho. Além disso, deve aparecer todos os valores de flag ao invés de um intervalo. 
-
-############### FUNCTIONS TO :
-
-################################################# 1/ Check, 
-
-# --- Functions ---
 
 def fileVerifier(filePath):
     """
@@ -72,7 +87,7 @@ def fileVerifier(filePath):
 
     # Validate the number of columns in the first 3 non-header lines
     with open(filePath, 'r') as file:
-        line_count = 0
+        lineCount = 0
         for line in file:
             # Ignore headers
             if line.startswith('@'):
@@ -86,8 +101,8 @@ def fileVerifier(filePath):
                 return False
 
             # Stop after 3 lines
-            line_count += 1
-            if line_count == 3:
+            lineCount += 1
+            if lineCount == 3:
                 break
 
     print(f"File '{filePath}' has the expected number of columns.")
@@ -96,45 +111,27 @@ def fileVerifier(filePath):
 
 # 2/ Read
 
-## flag dictionnary
-flags = {
-    0: "aligned forward",
-    1: "multiple segments",
-    2: "properly aligned",
-    4: "unmapped",
-    8: "mate unmapped",
-    16: "aligned reverse",
-    32: "mate aligned reverse",
-    64: "first segment",
-    128: "second segment",
-    256: "not primary",
-    512: "fails quality checks",
-    1024: "duplicate",
-    2048: "supplementary"
-}
 
 
-############################################################# Read
+############################################ READ
 
 
 
-
-
-def countReads(file_path, minQ=0):
+def countReads(filePath, minQ=0):
     """
     Analyze the SAM file to count different types of reads and filter based on MAPQ score,
     using the FLAG dictionary to display detailed information.
 
-    :param file_path: Path to the SAM file.
+    :param filePath: Path to the SAM file.
     :param minQ: Minimum MAPQ score for filtering reads. Defaults to 0.
 
     """
-    filtered_reads = 0
-    total_reads = 0
-    unmapped_reads = 0
-    duplicated_reads = 0
-    mapped_reads = 0
-    flag_details = {}  # Dictionary to count occurrences of each flag description
+    filteredReads = 0
+    totalReads = 0
+    unmapedReads = 0
+    duplicatedReads = 0
+    mappedReads = 0
+    flagDetails = {}  # Dictionary to count occurrences of each flag description
 
     with open(filePath, 'r') as file:
         for line in file:
@@ -142,38 +139,39 @@ def countReads(file_path, minQ=0):
             if line.startswith('@'):
                 continue
 
-            total_reads += 1
+            totalReads += 1
             fields = line.strip().split('\t')
             flag = int(fields[1])
 
             # Count occurrences of each FLAG description
             for key, description in flags.items():
                 if flag & key:
-                    flag_details[description] = flag_details.get(description, 0) + 1
+                    flagDetails[description] = flagDetails.get(description, 0) + 1
 
             # Check flags for specific categories
             if flag & 4:  # Unmapped
-                unmapped_reads += 1
+                unmapedReads += 1
             elif flag & 1024:  # Duplicated reads
-                duplicated_reads += 1
+                duplicatedReads += 1
             else:
-                mapped_reads += 1  # Mapped reads
+                mappedReads += 1  # Mapped reads
                 mapq = int(fields[4])  # MAPQ score is in the 5th column
 
                 # Apply the MAPQ filter
                 if mapq >= minQ:
-                    filtered_reads += 1
+                    filteredReads += 1
 
     # Print the results
     print(f"\n--- Read Statistics ---")
     
-    print(f"Total number of unmapped reads: {unmapped_reads}")
-    print(f"Total number of duplicated reads: {duplicated_reads}")
-    print(f"Total number of mapped reads: {mapped_reads}")
-    print(f"Total number of filtered reads (MAPQ >= {minQ}): {filtered_reads}")
+    print(f"Total number of unmapped reads: {unmapedReads}")
+    print(f"Total number of duplicated reads: {duplicatedReads}")
+    print(f"Total number of mapped reads: {mappedReads}")
+    print(f"Total number of filtered reads (MAPQ >= {minQ}): {filteredReads}")
     print(f"\n")
-    for description, count in flag_details.items():
+    for description, count in flagDetails.items():
         print(f"{description}: {count}")
+
 
 
 
@@ -211,7 +209,7 @@ def readPerMAPQ(filePath):
     :param filePath: path to the SAM file
     :return: dictionary with counts of reads per MAPQ score
     """
-    MappingQ_counts = {}
+    mappingQCount = {}
 
     with open(filePath, 'r') as file:
         for line in file:
@@ -219,14 +217,14 @@ def readPerMAPQ(filePath):
                 continue
 
             fields = line.strip().split('\t')
-            mapq = fields[4]
+            mapq = int(fields[4])
 
             flag = int(fields[1])
             if flag & 4 == 0:  # if bit 4 is not set, the read is mapped
-                MappingQ_counts[mapq] = MappingQ_counts.get(mapq, 0) + 1
+                mappingQCount[mapq] = mappingQCount.get(mapq, 0) + 1
 
     print("\n--- Reads per MAPQ ---")
-    for mapq, count in MappingQ_counts.items():
+    for mapq, count in mappingQCount.items():
         print(f"MAPQ {mapq}: {count}")
 
 
@@ -287,12 +285,10 @@ def plotFlagCounts(flagCounts):
 # plotFlagCounts(flagCounts)
 
 
-###################################Data vizualizing
+################################### DATA VIZUALIZING
 
 
-from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
-from matplotlib.figure import Figure
-import pandas as pd
+
 
 def saveResults(flagCounts, plotFileName='plot.png', htmlFileName='results.html'):
     """
@@ -352,24 +348,16 @@ def saveResults(flagCounts, plotFileName='plot.png', htmlFileName='results.html'
 
 
 
-def executeFlagStats():
-   countReadsByFlags(filePath)
-   plotFlagCounts(flagCounts)
 
-
-
-
-
-
-def filterSam(file_path, output_file, minQ=30):
+def filterSam(filePath, outputFile, minQ=30):
     """
     Filters the SAM file by MAPQ score and writes the filtered reads to a new file.
 
-    :param file_path: Path to the input SAM file.
-    :param output_file: Path to the output SAM file.
+    :param filePath: Path to the input SAM file.
+    :param outputFile: Path to the output SAM file.
     :param minQ: Minimum MAPQ score to retain a read (default is 30).
     """
-    with open(file_path, 'r') as infile, open(output_file, 'w') as outfile:
+    with open(filePath, 'r') as infile, open(outputFile, 'w') as outfile:
         for line in infile:
             # Skip header lines 
             if line.startswith('@'):
@@ -378,22 +366,23 @@ def filterSam(file_path, output_file, minQ=30):
             
             # Split the line into columns
             fields = line.strip().split('\t')
-            mapq = int(fields[4])  # MAPQ score is in the 5th column (index 4)
+            if len(fields) > 4 and fields[4].isdigit():
+                mapq = int(fields[4])  # MAPQ score is in the 5th column (index 4)
 
             # Filter based on MAPQ score
-            if mapq >= minQ:
-                outfile.write(line)
+                if mapq >= minQ:
+                    outfile.write(line)
 
 
-def mappedRead(file_path, output_file):
+def mappedRead(filePath, outputFile):
     """
     Filters the SAM file and keeping only the mapped reads  to a new file.
 
-    :param file_path: Path to the input SAM file.
-    :param output_file: Path to the output SAM file.
+    :param filePath: Path to the input SAM file.
+    :param outputFile: Path to the output SAM file.
    
     """
-    with open(file_path, 'r') as infile, open(output_file, 'w') as outfile:
+    with open(filePath, 'r') as infile, open(outputFile, 'w') as outfile:
         for line in infile:
             # Skip header lines 
             if line.startswith('@'):
@@ -409,30 +398,59 @@ def mappedRead(file_path, output_file):
                 outfile.write(line)
     
 
+def executeFlagStats(filePath):
+    """
+    Execute the analysis of flag statistics on the SAM file.
+    
+    Args:
+    filePath (str): Path to the SAM file to analyze.
+    
+    Returns:
+    dict: A dictionary of flag counts.
+    """
+    # Call the function to count flags
+    flagCounts = countReadsByFlags(filePath)
+    # Call the plot function (if necessary)
+    plotFlagCounts(flagCounts)
+    
+    return flagCounts
 
 
 
-# # Example usage
-# save_results_to_html(flag_counts)
-
-
-## 3/ Store,
+################################## 3 STORE
 
 # Main script
+import argparse
 
 def main():
-    
-
     parser = argparse.ArgumentParser(description="Analyze a SAM file and provide various statistics.")
+    
+    # Arguments for file input and output
     parser.add_argument('-i', '--input', required=True, help="Path to the SAM file.")
-    parser.add_argument('-cR', '--count-reads', action='store_true', help="Count reads (total, mapped, etc.).")
-    parser.add_argument('-rC', '--reads-per-chrom', action='store_true', help="Count reads per chromosome.")
-    parser.add_argument('-rMQ', '--reads-per-mapq', action='store_true', help="Count reads based on MAPQ scores.")
-    parser.add_argument('-cRF', '--count-reads-by-flag', action='store_true', help="Count reads based on FLAG values.")
+    parser.add_argument('-o', '--outputFile', required=False, help="Path to the output SAM file.")
+    
+    # Arguments for read counting and analysis
+    parser.add_argument('-cR', '--countReads', action='store_true', help="Count reads (total, mapped, etc.).")
+    parser.add_argument('-rC', '--readPerChrom', action='store_true', help="Count reads per chromosome.")
+    parser.add_argument('-rMQ', '--readPerMAPQ', action='store_true', help="Count reads based on MAPQ scores.")
+    parser.add_argument('-cRF', '--countReadsByFlags', action='store_true', help="Count reads based on FLAG values.")
+    
+    # Arguments for saving results and generating output
     parser.add_argument('-sR', '--saveResults', action='store_true', help="Save results and graphs to an HTML file.")
-    parser.add_argument('-m', '--minQ', type=int, default=0, help="Minimum MAPQ score for filtering reads.")
+    
+    # Arguments for filtering and saving new SAM files
     parser.add_argument('-fS', '--filterSam', action='store_true', help="Filter SAM file by mapping quality")
     parser.add_argument('-mR', '--mappedRead', action='store_true', help="Filter SAM file by keeping mapped reads")
+    parser.add_argument('-r', '--reference', help="Fichier SAM de référence pour l'alignement.")
+    parser.add_argument('-q', '--query', help="Fichier SAM de séquences à aligner.")
+    # parser.add_argument('-O', '--outputTwo', help="Fichier de sortie pour les résultats d'alignement.")
+
+    # Argument for MAPQ score filtering
+    parser.add_argument('-m', '--minQ', type=int, default=0, help="Minimum MAPQ score for filtering reads.")
+    
+    # Argument for executing flag stats (calls executeFlagStats)
+    parser.add_argument('-eFS', '--executeFlagStats', action='store_true', help="Execute Flag Stats analysis.")
+
 
     args = parser.parse_args()
 
@@ -441,45 +459,33 @@ def main():
         parser.print_help()
         return
 
-    # Verify the input file
+    # Verify the input file (this function should be defined elsewhere in your code)
     if not fileVerifier(args.input):
         return
 
     # Execute the appropriate functions based on the arguments
-    if args.count_reads:
+    if args.countReads:
         countReads(args.input, args.minQ)
-    if args.reads_per_chrom:
+    if args.readPerChrom:
         readPerChrom(args.input)
-    if args.reads_per_mapq:
+    if args.readPerMAPQ:
         readPerMAPQ(args.input)
-    if args.count_reads_by_flag:
-        flag_counts = count_reads_by_flag(args.input)
+    if args.countReadsByFlags:
+        flagCounts = countReadsByFlags(args.input)
         if args.saveResults:
-            saveResults(flag_counts)
+            saveResults(flagCounts)
     if args.filterSam:
-        filterSam(args.input,args.output,args.minQ)
-
-    if args.  mappedRead:
-          mappedRead(args.input,args.output)
-      
-
-
-def executeFlagStats(filePath):
-    """
-    Exécuter l'analyse des statistiques sur les flags du fichier SAM.
-    
-    Args:
-    filePath (str): Chemin du fichier SAM à analyser.
-    
-    Returns:
-    dict: Un dictionnaire des comptes de flags.
-    """
-    # Chamar a função de contagem de flags
-    flagCounts = countReadsByFlags(filePath)
-    # Chamar a função de plot (se necessário)
-    plotFlagCounts(flagCounts)
-    
-    return flagCounts
+        filterSam(args.input, args.outputFile, args.minQ)
+    if args.mappedRead:
+        mappedRead(args.input, args.output)
+    flagCounts = None
+    if args.executeFlagStats:
+        flagCounts = executeFlagStats(args.input)
+        if flagCounts:
+            saveResults(flagCounts)
+        else:
+            print("Error: You must run '--executeFlagStats' before saving the results.")
+     
 
 
    
