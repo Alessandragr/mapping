@@ -52,7 +52,7 @@ flags = {
 # SamReader.py -i <file> -sR              # Saves results (including plots) to an HTML file.
 # SamReader.py -i <file> -cR -sR          # Combines read statistics and saves results to HTML.
 # SamReader.py -i <file> -fS -o <outpufile> -m <mappingQuality>  # Filter SAM file by mapping quality and create a filterd sam file.
-
+#-mr -eFS
 
 
 ############################# FUNCTIONS TO :
@@ -348,6 +348,24 @@ def saveResults(flagCounts, plotFileName='plot.png', htmlFileName='results.html'
 
 
 
+def executeFlagStats(filePath):
+    """
+    Execute the analysis of flag statistics on the SAM file.
+    
+    Args:
+    filePath (str): Path to the SAM file to analyze.
+    
+    Returns:
+    dict: A dictionary of flag counts.
+    """
+    # Call the function to count flags
+    flagCounts = countReadsByFlags(filePath)
+    # Call the plot function (if necessary)
+    plotFlagCounts(flagCounts)
+    
+    return flagCounts
+
+
 
 def filterSam(filePath, outputFile, minQ=30):
     """
@@ -398,29 +416,13 @@ def mappedRead(filePath, outputFile):
                 outfile.write(line)
     
 
-def executeFlagStats(filePath):
-    """
-    Execute the analysis of flag statistics on the SAM file.
-    
-    Args:
-    filePath (str): Path to the SAM file to analyze.
-    
-    Returns:
-    dict: A dictionary of flag counts.
-    """
-    # Call the function to count flags
-    flagCounts = countReadsByFlags(filePath)
-    # Call the plot function (if necessary)
-    plotFlagCounts(flagCounts)
-    
-    return flagCounts
 
 
 
 ################################## 3 STORE
 
 # Main script
-import argparse
+
 
 def main():
     parser = argparse.ArgumentParser(description="Analyze a SAM file and provide various statistics.")
