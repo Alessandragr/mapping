@@ -24,6 +24,7 @@ To run this tool, you need:
   - `pandas`
   - `numpy`
   - `os`
+  - `argparse`
 
 ### Install Required Libraries
 Install the necessary libraries using `pip`:
@@ -33,7 +34,7 @@ pip install matplotlib pandas numpy os
 
 ### Usage
 
-## Usage
+
 
 ### Command-Line Options
 | Option                  | Description                                                                                 |
@@ -83,8 +84,7 @@ python3 SamReader.py -i path/to/input.sam
 
 
 ### Installing
-
-
+To use this software the project must be cloned from github to your computer the main dependecies listed above should be installed and you will be able to excecute it.
 
 
 
@@ -94,7 +94,7 @@ python3 SamReader.py -i path/to/input.sam
 Contributors names and contact info
 
 ex. Najat AMOUKOU  
-ex. Alessandra 
+ex. Alessandra RIBEIRO
 
 ## Version History
 
@@ -103,7 +103,22 @@ ex. Alessandra
 
 ## License
 
-This project is licensed under the [NAME HERE] License - see the LICENSE.md file for details
+Université de Montpellier
+
+Copyright (c) [2024] [GONCALVES RIBEIRO Alessandra, IBRAHIM AMOUKOU Najat]
+
+Authors contact: [alessandra.goncalves-ribeiro@etu.umontpellier.fr, najat.ibrahim-amoukou@etu.umontpellier.fr]
+
+Version: 0.0.1
+
+Date: 17 December 2024
+
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 0.0.1 of the License, or (at your option) any later version. 
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details. 
+
+You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
+
 
 ## Acknowledgments
 
