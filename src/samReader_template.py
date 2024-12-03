@@ -12,21 +12,21 @@ import os,re,sys,argparse
 from flags import flags
 
 ## flag dictionnary
-flags = {
-    0: "read aligned to the reference in a forward strand",
-    1: "template having multiple segments in sequencing",
-    2: "each segment properly aligned according to the aligner",
-    4: "read unmapped",
-    8: "mate unmapped",
-    16: "read aligned to the reverse strand",
-    32: "mate aligned to the reverse strand",
-    64: "the first segment in the template",
-    128: "the second segment in the template",
-    256: "not primary alignment",
-    512: "read fails platform/vendor quality checks",
-    1024: "PCR or optical duplicate",
-    2048: "supplementary alignment"
-}
+# flags = {
+#     0: "read aligned to the reference in a forward strand",
+#     1: "template having multiple segments in sequencing",
+#     2: "each segment properly aligned according to the aligner",
+#     4: "read unmapped",
+#     8: "mate unmapped",
+#     16: "read aligned to the reverse strand",
+#     32: "mate aligned to the reverse strand",
+#     64: "the first segment in the template",
+#     128: "the second segment in the template",
+#     256: "not primary alignment",
+#     512: "read fails platform/vendor quality checks",
+#     1024: "PCR or optical duplicate",
+#     2048: "supplementary alignment"
+# }
 
 
 
@@ -147,6 +147,7 @@ def countReads(filePath, minQ=0):
             for key, description in flags.items():
                 if flag & key:
                     flagDetails[description] = flagDetails.get(description, 0) + 1
+                    
 
             # Check flags for specific categories
             if flag & 4:  # Unmapped
@@ -496,6 +497,79 @@ if __name__ == "__main__":
 
 
 ## 4/ Analyse 
+################################## Mapping
+
+def parseSam(filePath):
+    """Parses a SAM file to extract sequences."""
+    sequences = []
+    with open(filePath, 'r') as file:
+        for line in file:
+            if not line.startswith('@'):  # Ignore header lines
+                parts = line.strip().split('\t')
+                sequences.append(parts[9])  # Coluna da sequência
+    return sequences
+
+
+
+def smithWaterman(seqOne, seqTwo, matchScore=2, mismatchPenalty=-1, gapPenalty=-2):
+    """Implements the Smith-Waterman algorithm for local alignment."""
+    m, n = len(seqOne), len(seqTwo)
+    scoreMatrix = np.zeros((m + 1, n + 1), dtype=int)
+    maxScore = 0
+    maxPos = None
+
+    # Fill the score matrix
+    for i in range(1, m + 1):
+        for j in range(1, n + 1):
+            match = scoreMatrix[i - 1][j - 1] + (matchScore if seqOne[i - 1] == seqTwo[j - 1] else mismatchPenalty)
+            delete = scoreMatrix[i - 1][j] + gapPenalty
+            insert = scoreMatrix[i][j - 1] + gapPenalty
+            scoreMatrix[i][j] = max(0, match, delete, insert)
+
+            if scoreMatrix[i][j] > maxScore:
+                maxScore = scoreMatrix[i][j]
+                maxPos = (i, j)
+
+    # Traceback
+    alignedSeqOne = []
+    alignedSeqTwo = []
+    i, j = maxPos
+
+    while scoreMatrix[i][j] != 0:
+        if scoreMatrix[i][j] == scoreMatrix[i - 1][j - 1] + (matchScore if seqOne[i - 1] == seqTwo[j - 1] else mismatchPenalty):
+            alignedSeqOne.append(seqOne[i - 1])
+            alignedSeqTwo.append(seqTwo[j - 1])
+            i -= 1
+            j -= 1
+        elif scoreMatrix[i][j] == scoreMatrix[i - 1][j] + gapPenalty:
+            alignedSeqOne.append(seqOne[i - 1])
+            alignedSeqTwo.append('-')
+            i -= 1
+        else:
+            alignedSeqOne.append('-')
+            alignedSeqTwo.append(seqTwo[j - 1])
+            j -= 1
+
+    return ''.join(reversed(alignedSeqOne)), ''.join(reversed(alignedSeqTwo)), maxScore
+
+# # Example usage
+# save_results_to_html(flagCounts)
+
+
+ # Alignement entre deux fichiers SAM
+    if args.reference and args.query and args.output:
+        # Parse les fichiers SAM
+        reference_sequences = parse_sam(args.reference)
+        query_sequences = parse_sam(args.query)
+
+        with open(args.output, 'w') as output_file:
+            for ref_seq in reference_sequences:
+                for query_seq in query_sequences:
+                    aligned_ref, aligned_query, score = smith_waterman(ref_seq, query_seq)
+                    output_file.write(f">Alignment Score: {score}\n")
+                    output_file.write(f"{aligned_ref}\n")
+                    output_file.write(f"{aligned_query}\n")
+                    output_file.write("\n")
 
 
 
