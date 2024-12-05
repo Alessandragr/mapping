@@ -27,6 +27,21 @@ from flags import flags
 #     1024: "PCR or optical duplicate",
 #     2048: "supplementary alignment"
 # }
+flags = {
+    0: "read aligned to the reference in a forward strand",
+    1: "template having multiple segments in sequencing",
+    2: "each segment properly aligned according to the aligner",
+    4: "read unmapped", # 
+    8: "mate unmapped", # 
+    16: "read aligned to the reverse strand",
+    32: "mate aligned to the reverse strand",
+    64: "the first segment in the template",
+    128: "the second segment in the template",
+    256: "not primary alignment",
+    512: "read fails platform/vendor quality checks",
+    1024: "PCR or optical duplicate",
+    2048: "supplementary alignment"
+}
 
 
 
@@ -224,7 +239,7 @@ def readPerMAPQ(filePath):
             if flag & 4 == 0:  # if bit 4 is not set, the read is mapped
                 mappingQCount[mapq] = mappingQCount.get(mapq, 0) + 1
 
-    print("\n--- Reads per MAPQ ---")
+    print("\n--- Number of Reads ---")
     for mapq, count in mappingQCount.items():
         print(f"MAPQ {mapq}: {count}")
 
@@ -257,7 +272,6 @@ def countReadsByFlags(filePath):
                 flagCounts[flag] = 1
     
     return flagCounts
-
 
 
 def plotFlagCounts(flagCounts):

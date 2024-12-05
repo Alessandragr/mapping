@@ -1,6 +1,22 @@
 {
   "todo": [
     {
+      "creation_time": "2024-12-03T09:32:55.212Z",
+      "description": {
+        "content": "Make it usable for any biologist.",
+        "mime": "text/markdown"
+      },
+      "id": "24",
+      "references": [],
+      "title": "Add a section with possible outputs to the README"
+    },
+    {
+      "creation_time": "2024-12-03T09:15:37.122Z",
+      "id": "21",
+      "references": [],
+      "title": "CIGAR Table"
+    },
+    {
       "assignedTo": {
         "name": "Najatamk"
       },
@@ -28,6 +44,16 @@
       "title": "integrer la partie 4"
     },
     {
+      "creation_time": "2024-12-03T09:15:01.224Z",
+      "description": {
+        "content": "For reads that are unmapped or the distance is not as expected, return as a percentage. Insert the percentage into a comparative table.",
+        "mime": "text/markdown"
+      },
+      "id": "19",
+      "references": [],
+      "title": "Interpret flags using bits or by subtraction."
+    },
+    {
       "assignedTo": {
         "name": "Najatamk"
       },
@@ -37,13 +63,10 @@
       "title": "mapping avec sequence de reference"
     },
     {
-      "assignedTo": {
-        "name": "Najatamk"
-      },
-      "creation_time": "2024-11-26T08:46:36.560Z",
-      "id": "16",
+      "creation_time": "2024-12-03T09:15:25.132Z",
+      "id": "20",
       "references": [],
-      "title": "rapport"
+      "title": "Percentage Table: total reads, mapped, unmapped, read quality"
     },
     {
       "assignedTo": {
@@ -53,6 +76,18 @@
       "id": "17",
       "references": [],
       "title": "readme"
+    },
+    {
+      "creation_time": "2024-12-03T09:15:53.166Z",
+      "id": "22",
+      "references": [],
+      "title": "Summarize the stats for HTML"
+    },
+    {
+      "creation_time": "2024-12-03T09:17:18.549Z",
+      "id": "23",
+      "references": [],
+      "title": "Summarize the stats for HTML"
     },
     {
       "assignedTo": {
@@ -66,6 +101,19 @@
       "id": "11",
       "references": [],
       "title": "vizualisation"
+    },
+    {
+      "assignedTo": {
+        "name": "Najatamk"
+      },
+      "creation_time": "2024-11-26T08:46:36.560Z",
+      "id": "16",
+      "references": [],
+      "title": "Write the report, justify why it is done in Python.",
+      "description": {
+        "content": "Use the time function on VSC to compare both (Windows and Python)",
+        "mime": "text/markdown"
+      }
     }
   ],
   "in-progress": [
