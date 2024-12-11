@@ -333,7 +333,7 @@ def mappedRead(filePath, outputFile):
 
 
 
-################################## 3 STORE
+################################## 3 plots
 
 
 
@@ -543,7 +543,7 @@ def summaryTable(filePath, output_file="flag_summary.txt"):
       
 
 # Function to execute flag stats and generate plots
-def executeFlagStats(filePath, minQ=0):
+def executePlots(filePath, minQ=0):
     """
     Execute the analysis of flag statistics and read statistics on the SAM file,
     generating a bar chart, pie chart, and MAPQ distribution, and generating a flag summary file.
@@ -733,36 +733,123 @@ def saveResults(plot_paths, flagDetails, summary_flag_table_path, html_output_pa
         f.write(html_content)
     
     print(f"HTML report saved to {html_output_path}")
+    
+    
+    
+    
+    
+    ###################Mapping 
+    
+    
+    def parseSam(filePath):
+        """
+        Extract sequences from a SAM file.
+
+        :param filePath: Path to the SAM file.
+        :return: List of sequences (each as a tuple with read ID and sequence).
+        """
+        print("Entered parseSam") 
+        sequences = []
+        with open(filePath, 'r') as file:
+            for line in file:
+                if line.startswith('@'):  # Skip header lines
+                    continue
+                parts = line.strip().split('\t')
+                if len(parts) > 9:  # Ensure there are at least 10 columns
+                    readId = parts[0]   # Column 1: Read ID
+                    sequence = parts[9]  # Column 10: Sequence
+                    sequences.append((readId, sequence))
+        print(f"Loaded {len(sequences)} sequences from the file.")
+        return sequences
+
+
+def smithWaterman(seqOne: str, seqTwo: str, matchScore: int = 2, mismatchPenalty: int = -2, gapPenalty: int = -3):
+    """
+    Perform the Smith-Waterman alignment algorithm.
+
+    :param seqOne: First sequence (query).
+    :param seqTwo: Second sequence (reference).
+    :param matchScore: Score for matching characters.
+    :param mismatchPenalty: Penalty for mismatched characters.
+    :param gapPenalty: Penalty for gaps.
+    :return: Tuple containing the aligned sequences and the maximum alignment score.
+    """
+    m, n = len(seqOne), len(seqTwo)
+    scoreMatrix = np.zeros((m + 1, n + 1), dtype=int)
+    maxScore = 0
+    maxPos = None
+
+    # Fill the scoring matrix with adjusted penalties
+    for i in range(1, m + 1):
+        for j in range(1, n + 1):
+            match = scoreMatrix[i - 1][j - 1] + (matchScore if seqOne[i - 1] == seqTwo[j - 1] else mismatchPenalty)
+            delete = scoreMatrix[i - 1][j] + gapPenalty
+            insert = scoreMatrix[i][j - 1] + gapPenalty
+            scoreMatrix[i][j] = max(0, match, delete, insert)
+
+            if scoreMatrix[i][j] > maxScore:
+                maxScore = scoreMatrix[i][j]
+                maxPos = (i, j)
+
+    # Traceback to construct the alignment
+    alignedSeqOne = []
+    alignedSeqTwo = []
+    i, j = maxPos
+
+    while scoreMatrix[i][j] != 0:
+        if scoreMatrix[i][j] == scoreMatrix[i - 1][j - 1] + (matchScore if seqOne[i - 1] == seqTwo[j - 1] else mismatchPenalty):
+            alignedSeqOne.append(seqOne[i - 1])
+            alignedSeqTwo.append(seqTwo[j - 1])
+            i -= 1
+            j -= 1
+        elif scoreMatrix[i][j] == scoreMatrix[i - 1][j] + gapPenalty:
+            alignedSeqOne.append(seqOne[i - 1])
+            alignedSeqTwo.append('-')
+            i -= 1
+        else:
+            alignedSeqOne.append('-')
+            alignedSeqTwo.append(seqTwo[j - 1])
+            j -= 1
+
+    return ''.join(reversed(alignedSeqOne)), ''.join(reversed(alignedSeqTwo)), maxScore
+
+
+
+
+    
 
 
 # Main script
 def main():
     parser = argparse.ArgumentParser(description="Analyze a SAM file and provide various statistics.")
-    
+
     # Arguments for file input and output
     parser.add_argument('-i', '--input', required=True, help="Path to the SAM file.")
     parser.add_argument('-o', '--outputFile', required=False, help="Path to the output SAM file.")
-    
+
     # Arguments for read counting and analysis
     parser.add_argument('-cR', '--countReads', action='store_true', help="Count reads (total, mapped, etc.).")
     parser.add_argument('-rC', '--readPerChrom', action='store_true', help="Count reads per chromosome.")
     parser.add_argument('-rMQ', '--readPerMAPQ', action='store_true', help="Count reads based on MAPQ scores.")
     parser.add_argument('-cRF', '--countReadsByFlags', action='store_true', help="Count reads based on FLAG values.")
-    
+
     # Arguments for saving results and generating output
     parser.add_argument('-sR', '--saveResults', action='store_true', help="Save results and graphs to an HTML file.")
-    
+
     # Arguments for filtering and saving new SAM files
     parser.add_argument('-fS', '--filterSam', action='store_true', help="Filter SAM file by mapping quality")
     parser.add_argument('-mR', '--mappedRead', action='store_true', help="Filter SAM file by keeping mapped reads")
-    parser.add_argument('-r', '--reference', help="Fichier SAM de référence pour l'alignement.")
-    parser.add_argument('-q', '--query', help="Fichier SAM de séquences à aligner.")
-    
+    parser.add_argument('-r', '--reference', help="Reference sequence for alignment.")
+    parser.add_argument('-q', '--query', help="Query sequence for alignment.")
+
     # Argument for MAPQ score filtering
     parser.add_argument('-m', '--minQ', type=int, default=0, help="Minimum MAPQ score for filtering reads.")
-    
-    # Argument for executing flag stats (calls executeFlagStats)
-    parser.add_argument('-eFS', '--executeFlagStats', action='store_true', help="Execute Flag Stats analysis.")
+
+    # Argument for executing flag stats (calls executePlots)
+    parser.add_argument('-eP', '--executePlots', action='store_true', help="Execute Flag Stats analysis.")
+
+    # Arguments for Smith-Waterman alignment
+    parser.add_argument('-sw', '--smithWaterman', action='store_true', help="Perform Smith-Waterman alignment.")
 
     args = parser.parse_args()
 
@@ -776,86 +863,74 @@ def main():
         print(f"Error: The input file {args.input} does not exist or cannot be opened.")
         return
 
-    # Initialize variables for storing results
-    flagCounts = None
-    readstatistics = {}
-    flagDetails = {}
-    plot_paths = []
-    summary_flag_table_path = None
-
     # Execute the appropriate functions based on the arguments
+    if args.smithWaterman:
+        if not args.reference or not args.query:
+            print("Error: Both reference and query sequences are required for Smith-Waterman alignment.")
+            return
+
+        alignment_result = smithWaterman(args.reference, args.query)
+        print("Smith-Waterman Alignment Result:")
+        print(f"Aligned Sequence 1: {alignment_result[0]}")
+        print(f"Aligned Sequence 2: {alignment_result[1]}")
+        print(f"Alignment Score: {alignment_result[2]}")
+
+    # Existing code for read counting, flag stats, and result saving
     if args.countReads:
         readstatistics = countReads(args.input, args.minQ)
-    
+
     if args.readPerChrom:
         readPerChrom(args.input)
-    
+
     if args.readPerMAPQ:
         readPerMAPQ(args.input)
-    
+
     if args.countReadsByFlags:
         flagCounts = countReadsByFlags(args.input)
         flagDetails = {key: count for key, count in flagCounts.items()}
 
     if args.filterSam:
         filterSam(args.input, args.outputFile, args.minQ)
-    
+
     if args.mappedRead:
         mappedRead(args.input, args.outputFile)
-   
-    if args.executeFlagStats:
+
+    if args.executePlots:
         # Execute flag stats and retrieve results
-        flag_plot_path, pie_plot_path, mappingq_plot_path, readstatistics, mappingQCount, summary_flag_table_path = executeFlagStats(args.input, args.minQ)
-        
+        flag_plot_path, pie_plot_path, mappingq_plot_path, readstatistics, mappingQCount, summary_flag_table_path = executePlots(args.input, args.minQ)
+
         # Collect the generated plot paths
         plot_paths = [flag_plot_path, pie_plot_path, mappingq_plot_path]
-        
+
         # Update flag counts based on the SAM file
         flagCounts = countReadsByFlags(args.input)
-        
+
         # Create flag details dictionary, ensuring it contains flag counts and descriptions
         flagDetails = {flag: {'count': count, 'description': flags.get(flag, 'Unknown flag')} for flag, count in flagCounts.items()}
 
-        # Optionally, you can print or save these flag details as needed
         print(f"Flag Details: {flagDetails}")
-
-        # Optionally, save or display statistics or flag details
         print(f"Read Statistics: {readstatistics}")
         print(f"Mapping Quality Counts: {mappingQCount}")
 
-        # Example of saving the flag summary to a file (using your summaryTable function)
-        summaryTable(args.input, output_file="flag_summary.txt")
-
-        # Do additional processing if needed, like saving the results to an HTML report, etc.
-        print("Execution of flag statistics and plotting complete.")
-
     # Save results to HTML if required
     if args.saveResults:
-        # Check if plot_paths are empty
         if not plot_paths:
-            print("Error: Plot paths are empty. Ensure executeFlagStats is run before saving results.")
+            print("Error: Plot paths are empty. Ensure executePlots is run before saving results.")
             return
 
-        # Check if flagCounts are empty
         if not flagCounts:
             print("Error: Flag counts are empty. Ensure countReadsByFlags returns valid results.")
             return
 
-        # Prepare the flagDetails for saving results
-        flagDetails = {key: {'count': count, 'description': 'Some description for the flag'} for key, count in flagCounts.items()}
-
-        # Save the results using the saveResults function
         saveResults(
             plot_paths=plot_paths,
-            #readstatistics=readstatistics,
             flagDetails=flagDetails,
-            #totalReads=sum(flagCounts.values()),  # Total reads should be the sum of all counts from flagCounts
-            summary_flag_table_path=summary_flag_table_path  # Pass the summary flag table path
+            summary_flag_table_path=summary_flag_table_path
         )
-
 
 if __name__ == "__main__":
     main()
+
 
 ## 4/ Analyse 
 
