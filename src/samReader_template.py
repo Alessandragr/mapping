@@ -741,7 +741,7 @@ def saveResults(plot_paths, flagDetails, summary_flag_table_path, html_output_pa
     ###################Mapping 
     
     
-    def parseSam(filePath):
+def parseSam(filePath):
         """
         Extract sequences from a SAM file.
 
@@ -762,58 +762,69 @@ def saveResults(plot_paths, flagDetails, summary_flag_table_path, html_output_pa
         print(f"Loaded {len(sequences)} sequences from the file.")
         return sequences
 
-
-def smithWaterman(seqOne: str, seqTwo: str, matchScore: int = 2, mismatchPenalty: int = -2, gapPenalty: int = -3):
+def smithWaterman(sequences: list,  reference: str, outputFilePath: str, matchScore: int = 2, mismatchPenalty: int = -2, gapPenalty: int = -3):
     """
     Perform the Smith-Waterman alignment algorithm.
 
-    :param seqOne: First sequence (query).
-    :param seqTwo: Second sequence (reference).
+    :param sequences: List of tuples containing read ID and query sequences.
+    :param reference: Reference sequence to align against.
+    :param outputFilePath: Path to save the alignment results.
     :param matchScore: Score for matching characters.
     :param mismatchPenalty: Penalty for mismatched characters.
     :param gapPenalty: Penalty for gaps.
-    :return: Tuple containing the aligned sequences and the maximum alignment score.
     """
-    m, n = len(seqOne), len(seqTwo)
-    scoreMatrix = np.zeros((m + 1, n + 1), dtype=int)
-    maxScore = 0
-    maxPos = None
 
-    # Fill the scoring matrix with adjusted penalties
-    for i in range(1, m + 1):
-        for j in range(1, n + 1):
-            match = scoreMatrix[i - 1][j - 1] + (matchScore if seqOne[i - 1] == seqTwo[j - 1] else mismatchPenalty)
-            delete = scoreMatrix[i - 1][j] + gapPenalty
-            insert = scoreMatrix[i][j - 1] + gapPenalty
-            scoreMatrix[i][j] = max(0, match, delete, insert)
+    # Open the output file to save the alignment results
+    with open(outputFilePath, 'w') as outputFile:
+        for readId, seqOne in sequences:
+            m, n = len(seqOne), len(reference)
+            scoreMatrix = np.zeros((m + 1, n + 1), dtype=int)
+            maxScore = 0
+            maxPos = None
 
-            if scoreMatrix[i][j] > maxScore:
-                maxScore = scoreMatrix[i][j]
-                maxPos = (i, j)
+            # Fill the scoring matrix with adjusted penalties
+            for i in range(1, m + 1):
+                for j in range(1, n + 1):
+                    match = scoreMatrix[i - 1][j - 1] + (matchScore if seqOne[i - 1] == reference[j - 1] else mismatchPenalty)
+                    delete = scoreMatrix[i - 1][j] + gapPenalty
+                    insert = scoreMatrix[i][j - 1] + gapPenalty
+                    scoreMatrix[i][j] = max(0, match, delete, insert)
 
-    # Traceback to construct the alignment
-    alignedSeqOne = []
-    alignedSeqTwo = []
-    i, j = maxPos
+                    if scoreMatrix[i][j] > maxScore:
+                        maxScore = scoreMatrix[i][j]
+                        maxPos = (i, j)
 
-    while scoreMatrix[i][j] != 0:
-        if scoreMatrix[i][j] == scoreMatrix[i - 1][j - 1] + (matchScore if seqOne[i - 1] == seqTwo[j - 1] else mismatchPenalty):
-            alignedSeqOne.append(seqOne[i - 1])
-            alignedSeqTwo.append(seqTwo[j - 1])
-            i -= 1
-            j -= 1
-        elif scoreMatrix[i][j] == scoreMatrix[i - 1][j] + gapPenalty:
-            alignedSeqOne.append(seqOne[i - 1])
-            alignedSeqTwo.append('-')
-            i -= 1
-        else:
-            alignedSeqOne.append('-')
-            alignedSeqTwo.append(seqTwo[j - 1])
-            j -= 1
+            # Check if a valid alignment exists
+            if maxPos is None:
+                outputFile.write(f">ReadID: {readId}\n")
+                outputFile.write("No valid alignment found.\n\n")
+                continue
 
-    return ''.join(reversed(alignedSeqOne)), ''.join(reversed(alignedSeqTwo)), maxScore
+            # Traceback to construct the alignment
+            alignedSeqOne = []
+            alignedSeqTwo = []
+            i, j = maxPos
 
+            while scoreMatrix[i][j] != 0:
+                if scoreMatrix[i][j] == scoreMatrix[i - 1][j - 1] + (matchScore if seqOne[i - 1] == reference[j - 1] else mismatchPenalty):
+                    alignedSeqOne.append(seqOne[i - 1])
+                    alignedSeqTwo.append(reference[j - 1])
+                    i -= 1
+                    j -= 1
+                elif scoreMatrix[i][j] == scoreMatrix[i - 1][j] + gapPenalty:
+                    alignedSeqOne.append(seqOne[i - 1])
+                    alignedSeqTwo.append('-')
+                    i -= 1
+                else:
+                    alignedSeqOne.append('-')
+                    alignedSeqTwo.append(reference[j - 1])
+                    j -= 1
 
+            # Write the alignment result to the output file
+            outputFile.write(f">ReadID: {readId}\n")
+            outputFile.write(f"Aligned Sequence 1: {''.join(reversed(alignedSeqOne))}\n")
+            outputFile.write(f"Aligned Sequence 2: {''.join(reversed(alignedSeqTwo))}\n")
+            outputFile.write(f"Alignment Score: {maxScore}\n\n")
 
 
     
@@ -847,7 +858,8 @@ def main():
 
     # Argument for executing flag stats (calls executePlots)
     parser.add_argument('-eP', '--executePlots', action='store_true', help="Execute Flag Stats analysis.")
-
+    # Arguments for ParseSam
+    parser.add_argument('-pS', '--parseSam', action='store_true', help="Parse sam file")
     # Arguments for Smith-Waterman alignment
     parser.add_argument('-sw', '--smithWaterman', action='store_true', help="Perform Smith-Waterman alignment.")
 
@@ -863,13 +875,21 @@ def main():
         print(f"Error: The input file {args.input} does not exist or cannot be opened.")
         return
 
-    # Execute the appropriate functions based on the arguments
-    if args.smithWaterman:
-        if not args.reference or not args.query:
-            print("Error: Both reference and query sequences are required for Smith-Waterman alignment.")
+    
+    if args.parseSam:
+        if not args.input:
+            print("Error:sequence is required.")
             return
-
-        alignment_result = smithWaterman(args.reference, args.query)
+        parseSam(args.input)
+        print('file parsed')
+    
+    if args.smithWaterman:
+        if not args.reference  or not args.outputFile:
+            print("Error: Reference sequence, query file, and output file path are required for Smith-Waterman alignment.")
+            return
+        sequences = parseSam(args.input)
+        smithWaterman(sequences, args.reference, args.outputFile)
+        print(f"Smith-Waterman alignment results saved to {args.outputFile}.")
         print("Smith-Waterman Alignment Result:")
         print(f"Aligned Sequence 1: {alignment_result[0]}")
         print(f"Aligned Sequence 2: {alignment_result[1]}")
