@@ -23,6 +23,8 @@
 
 # EXTRA : Executer Python vs Bash avec Jobs dans un serveur.or
 
+# EXTRA : Distribuition of CG content ao longo dos contigs e do genoma já mapeado.
+
 #!/bin/bash
 
 echo "[INFO] Parameters: $*"
