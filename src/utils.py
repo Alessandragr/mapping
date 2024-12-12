@@ -1,3 +1,4 @@
+
 ############### IMPORT MODULES ############### 
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
@@ -788,5 +789,105 @@ def smithWaterman(sequences: list,  reference: str, matchScore: int = 2, mismatc
 
 
 
+def compareSequences(referenceSequences, querySequences, smithWatermanFunc, scoreThreshold=50):
+    """
+    Compare query sequences with reference sequences using Smith-Waterman algorithm.
+
+    :param referenceSequences: List of sequences from the reference SAM file.
+    :param querySequences: List of sequences from the query SAM file.
+    :param smithWatermanFunc: Function that implements Smith-Waterman algorithm.
+    :param scoreThreshold: Minimum score threshold for considering an alignment valid.
+    :return: List of matches with alignment details.
+    """
+    results = []
+
+    for queryId, querySeq in querySequences:
+        for refId, refSeq in referenceSequences:
+            # Realiza o alinhamento usando Smith-Waterman
+            alignedRef, alignedQuery, score = smithWatermanFunc(refSeq, querySeq)
+            
+            # Adiciona o resultado se a pontuação for maior que o limiar
+            if score >= scoreThreshold:  # Verifica se o alinhamento é relevante
+                results.append({
+                    "queryId": queryId,
+                    "refId": refId,
+                    "score": score,
+                    "alignedRef": alignedRef,
+                    "alignedQuery": alignedQuery
+                })
     
+    return results
+
+
+
+def processSequences(args, smithWaterman):
+    """
+    Process sequences by comparing reference and query sequences, and print the alignment results.
+
+    :param args: Parsed command-line arguments.
+    """
+    print("Passou no processSequences") 
+    if not args.reference or not args.input or not args.outputFile:
+        print("Error: Reference, query, and output file paths are required.")
+        return
+    
+    # Carregar as sequências dos arquivos SAM, ignorando os cabeçalhos
+    referenceSequences = parseSam(args.reference)
+    querySequences = parseSam(args.input)
+
+    if not referenceSequences:
+        print(f"Error: Failed to load sequences from reference file '{args.reference}'.")
+        return
+
+    if not querySequences:
+        print(f"Error: Failed to load sequences from query file '{args.input}'.")
+        return
+
+    # Realizar o alinhamento e salvar os resultados
+    with open(args.outputFile, 'w') as outputFile:
+        matches = compareSequences(referenceSequences, querySequences, smithWaterman)
+        for match in matches:
+            print(f"Passou aqui {args.outputFile}")
+            outputFile.write(f"Query {match['queryId']} aligned with Reference {match['refId']}\n")
+            outputFile.write(f"Score: {match['score']}\n")
+            outputFile.write(f"Aligned Reference: {match['alignedRef']}\n")
+            outputFile.write(f"Aligned Query: {match['alignedQuery']}\n\n")
+
+            print(f"Passou aqui também {args.outputFile}") 
+    print(f"Alignment results saved to {args.outputFile}")
+
+
+
+def mappedPrimaryReads(filePath, outputFile):
+    """
+    Filters the SAM file and keeps only the primary and mapped reads to a new file.
+
+    :param filePath: Path to the input SAM file.
+    :param outputFile: Path to the output SAM file.
+   
+    """
+    # Flags to be excluded:
+    excludedFlags = [
+        'read unmapped',
+        'mate unmapped',
+        'not primary alignment',
+        'read fails platform/vendor quality checks',
+        'PCR or optical duplicate',
+        'supplementary alignment'
+    ]
+
+    with open(filePath, 'r') as infile, open(outputFile, 'w') as outfile:
+        for line in infile:
+            # Skip header lines 
+            if line.startswith('@'):
+                outfile.write(line)
+                continue
+            
+            # Split the line into columns
+            fields = line.strip().split('\t')
+            flag = int(fields[1])  # 
+
+            # Filter based on MAPQ score
+            if not any(flag & flags[excludedFlags] for excludedFlags in excludedFlags):
+                outfile.write(line)
 

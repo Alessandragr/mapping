@@ -38,19 +38,6 @@
       "assignedTo": {
         "name": "Najatamk"
       },
-      "creation_time": "2024-11-26T08:44:15.463Z",
-      "description": {
-        "content": "faire appel au dictionnaire pour les fonctions qui en ont besoin",
-        "mime": "text/markdown"
-      },
-      "id": "14",
-      "references": [],
-      "title": "flag dictionnary"
-    },
-    {
-      "assignedTo": {
-        "name": "Najatamk"
-      },
       "creation_time": "2024-11-26T08:48:40.769Z",
       "id": "18",
       "references": [],
@@ -97,12 +84,6 @@
       "title": "Summarize the stats for HTML"
     },
     {
-      "creation_time": "2024-12-03T09:17:18.549Z",
-      "id": "23",
-      "references": [],
-      "title": "Summarize the stats for HTML"
-    },
-    {
       "assignedTo": {
         "name": "Najatamk"
       },
@@ -129,7 +110,21 @@
       }
     }
   ],
-  "in-progress": [],
+  "in-progress": [
+    {
+      "assignedTo": {
+        "name": "Najatamk"
+      },
+      "creation_time": "2024-11-26T08:44:15.463Z",
+      "description": {
+        "content": "faire appel au dictionnaire pour les fonctions qui en ont besoin",
+        "mime": "text/markdown"
+      },
+      "id": "14",
+      "references": [],
+      "title": "flag dictionnary"
+    }
+  ],
   "testing": [
     {
       "creation_time": "2024-10-25T15:28:01.113Z",
