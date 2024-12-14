@@ -15,6 +15,10 @@ This is a Python-based command-line tool for analyzing SAM (Sequence Alignment/M
 - **FLAG Interpretation**: Decodes SAM file FLAGS to explain the alignment properties.
 - **Visualization**: Generates a html file showing the statistics of the sam file.
 - **Filtering SAm file**:
+    - Filterring by mapping quality
+    - FIltering by only keeping mapped reads
+    - Filtering by keeping primarly mapped reads
+  
 
 ## Requirements
 To run this tool, you need:
@@ -29,8 +33,9 @@ To run this tool, you need:
 ### Install Required Libraries
 Install the necessary libraries using `pip`:
 
-pip install matplotlib pandas numpy os
-
+```bash
+pip install matplotlib pandas numpy argparser
+```
 
 ### Usage
 
@@ -42,40 +47,45 @@ pip install matplotlib pandas numpy os
 | `-h` or `--help`        | Displays help information.                                                                  |
 | `-i` or `--input`       | Specifies the path to the input SAM file (.sam).                                            |
 | `-o` or `--output`      | Specifies the path to the output file.                                                      |
+| `-m` or `--minQ`       | Minimum MAPQ score for filtering reads.                                          |
+| `-r` or `--reference`       | Reference sequence for alignment.                                           |
 | `-cR` or `--countReads` | Counts total, mapped, unmapped, and duplicated reads, with an option for MAPQ filtering.    |
 | `-rC` or `--readPerChrom` | Counts the number of reads per chromosome.                                                |
 | `-rMQ` or `--readPerMAPQ` | Counts the number of reads for each MAPQ score.                                            |
-| `-cRF` or `--countReadsByFlags` | Counts the number of reads for each FLAG value.                                      |
-| `-sR` or `--save-results` | Saves the results and associated plots to an HTML file.                                   |
+| `-cRF` or `--countReadsByFlags` | Counts the number of reads for each FLAG value.                                      |                             |
 | `-fS` or `--filterSam`  | Filters the SAM file by mapping quality and creates a new filtered SAM file.                |
 | `-mr` or `--mappedRead` | Filters the SAM file by mapped reads and creates a filtered SAM file.                       |
-| `-eFS` or `--executeFlagStats` | Executes FLAG analysis and generates plots.                                           |
+| `-mPR` or `--mappedPrimarlyReads` | Filters the SAM file by primarly  mapped reads and creates a filtered SAM file.                       |
+| `-eP` or `--executePlots` | Executes FLAG analysis and generates plots.                                           |
+| `-aS` or `--alignSequences ` | Aligns reference and query sequences using an alignment algorithm.                                            |
+| `-sR`  or `--saveResults` |  Saves results (including plots) to an HTML file.                                        |
 
 ### Command Synopsis
 Here are examples of how to use the tool:
 
 ## SYNOPSIS:
- | Command                                                       | Description                                                                                     |
+| Command                                                       | Description                                                                                     |
 |---------------------------------------------------------------|-------------------------------------------------------------------------------------------------|
-| `SamReader.py -h` or `--help`                                  | Displays help.                                                                                 |
-| `SamReader.py -i <file>`                                       | Check if SAM file is valid.                                                                     |
-| `SamReader.py -i <file> -cR`                                   | Prints read statistics (total, mapped, unmapped, duplicated).                                  |
-| `SamReader.py -i <file> -cR -m <mappingquality>`               | Prints read statistics (total, mapped, unmapped, duplicated, filtered).                        |
-| `SamReader.py -i <file> -rC`                                   | Prints the number of reads per chromosome.                                                      |
-| `SamReader.py -i <file> -rMQ`                                  | Prints the number of reads per MAPQ score.                                                      |
-| `SamReader.py -i <file> -cRF`                                  | Prints the number of reads per FLAG value.                                                      |
-| `SamReader.py -i <file> -sR`                                   | Saves results (including plots) to an HTML file.                                                 |
-| `SamReader.py -i <file> -cR -sR`                               | Combines read statistics and saves results to HTML.                                              |
-| `SamReader.py -i <file> -fS -o <outputfile> -m <mappingQuality>`| Filter SAM file by mapping quality and create a filtered SAM file.                              |
-| `SamReader.py -i <file> -mr -o <outputfile>`                   | Filter SAM file by mapped read and create a filtered SAM file.                                  |
-| `SamReader.py -i <file> --eFS`                                 | Execute FLAG Stats analysis and create plots.                                                   |
+| `SamAnalyser.py -h` or `--help`                               | Displays help.                                                                                 |
+| `SamAnalyser.py -i <file>`                                    | Check if the SAM file is valid.                                                                |
+| `SamAnalyser.py -i <file> -cR`                                | Prints read statistics (total, mapped, unmapped, duplicated).                                  |
+| `SamAnalyser.py -i <file> -cR -m <mappingQuality>`            | Prints filtered read statistics (total, mapped, unmapped, duplicated).                         |
+| `SamAnalyser.py -i <file> -rC`                                | Prints the number of reads per chromosome.                                                     |
+| `SamAnalyser.py -i <file> -rMQ`                               | Prints the number of reads for each MAPQ score.                                                |
+| `SamAnalyser.py -i <file> -cRF`                               | Prints the number of reads for each FLAG value.                                                |
+| `SamAnalyser.py -i <file> -fS -o <outputFile> -m <mappingQuality>` | Filters SAM file by mapping quality and creates a filtered SAM file.                           |
+| `SamAnalyser.py -i <file> -mR -o <outputFile>`                | Filters SAM file to keep only mapped reads.                                                    |
+| `SamAnalyser.py -i <file> -mPR -o <outputFile>`               | Filters SAM file to keep only primarily mapped reads.                                          |
+| `SamAnalyser.py -i <file> -eP`                                | Executes Flag Stats analysis and generates plots.                                              |                            |
+| `SamAnalyser.py -i <file> -eP -sR`                            | Combines read statistics plots with saving results to HTML.                             |
+| `SamAnalyser.py -i <file> -r <reference> -o <outputFile> -aS` | Aligns reference and query sequences using an alignment algorithm.                             |
 
 
 #### Help and Validation
 ```bash
-python3 SamReader.py -h
-python3 SamReader.py --help
-python3 SamReader.py -i path/to/input.sam
+python3 SamAnalyser.py -h
+python3 SamAnalyser.py --help
+python3 SamAnalyser.py -i path/to/input.sam
 ```
   
 
@@ -84,7 +94,14 @@ python3 SamReader.py -i path/to/input.sam
 
 
 ### Installing
-To use this software the project must be cloned from github to your computer the main dependecies listed above should be installed and you will be able to excecute it.
+To use this software:
+
+1. Clone the repository from GitHub to your computer.
+2. Install the required dependencies listed above.
+3. Run the script as per the provided commands.
+
+
+
 
 
 
