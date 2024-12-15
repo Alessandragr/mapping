@@ -13,10 +13,10 @@ from flags import flags
 
 ############################# FUNCTIONS TO :
 
-## 1/ Check, 
 
 
 
+############################# CHECK 
 def fileVerifier(filePath):
     """
     Check if the file is a valid SAM file.
@@ -68,8 +68,7 @@ def fileVerifier(filePath):
 
 
 
-############################################ READ
-
+############################# READS STAT
 def countReads(filePath, minQ=0):
     """
     Analyze the SAM file to count different types of reads and filter based on MAPQ score,
@@ -170,6 +169,8 @@ def readPerChrom(filePath):
         print(f"{chrom}: {count}")
 
 
+
+
 def readPerMAPQ(filePath):
     """
     Count the number of reads for each MAPQ score.
@@ -239,8 +240,7 @@ def countReadsByFlags(filePath):
 
 
 
-###Filter Sam file
-
+############################# FILTER FILES
 def filterSam(filePath, outputFile, minQ=30):
     """
     Filters the SAM file by MAPQ score and writes the filtered reads to a new file.
@@ -265,6 +265,7 @@ def filterSam(filePath, outputFile, minQ=30):
                 if mapq >= minQ:
                     outfile.write(line)
     print(" Filtered sam file was created succesfully")
+
 
 
 def mappedRead(filePath, outputFile):
@@ -333,10 +334,7 @@ def mappedPrimaryReads(filePath, outputFile):
 
 
 
-################################## 3 plots
-
-
-
+################################## DATA VIZUALIZATION
 def plotReadsPerMAPQ(mappingQCount, outputFile ="reads_per_mapq.png"):
     """
     Plot the distribution of reads per MAPQ score as a bar chart with intervals of 20 
@@ -385,6 +383,11 @@ def plotReadsPerMAPQ(mappingQCount, outputFile ="reads_per_mapq.png"):
     
     return  outputFile
 
+
+
+
+
+
 def plotFlagCounts(flagCounts, output_file="flag_counts.png"):
     """
     Plot the flag counts as a bar chart, annotate with percentages, and save the plot as a PNG file.
@@ -425,6 +428,9 @@ def plotFlagCounts(flagCounts, output_file="flag_counts.png"):
     
     # Return the updated DataFrame for verification if needed
     return df
+
+
+
 
 
 def plotReadsPercentage(readstatistics, outputFile="read_distribution.png"):
@@ -485,6 +491,10 @@ def plotReadsPercentage(readstatistics, outputFile="read_distribution.png"):
     finally:
         plt.close()
 
+
+
+
+
 def summaryTable(filePath, output_file="flag_summary.txt"):
     """
     Create a summary table based on flag distribution from a SAM file and save it to a file.
@@ -532,9 +542,11 @@ def summaryTable(filePath, output_file="flag_summary.txt"):
     
     print(f"Flag summary table saved to {output_file}")
 
-      
 
-# Function to execute flag stats and generate plots
+
+
+
+############################# EXECUTE FLAGS AND CREATE PLOTS
 def executePlots(filePath, outputDir, minQ=0):
     """
     Execute the analysis of flag statistics and read statistics on the SAM file,
@@ -597,6 +609,9 @@ def executePlots(filePath, outputDir, minQ=0):
 
     # Return all plot paths, statistics, and summary flag table path
     return flag_plot_path, pie_plot_path, mappingq_plot_path, readstatistics, mappingQCount, summary_flag_table_path
+
+
+
 
 
 def saveResults(plot_paths, summary_flag_table_path, html_output_path="Result.html"):
@@ -729,8 +744,7 @@ def saveResults(plot_paths, summary_flag_table_path, html_output_path="Result.ht
     
     
     
-    
-    ###################Mapping 
+############################# MAPPING 
     
 def parseSam(filePath):
     """
@@ -752,6 +766,8 @@ def parseSam(filePath):
                 sequences.append((readId, sequence))  # Store the read ID and sequence as a tuple
     print(f"Loaded {len(sequences)} sequences from the file.")  # Print the number of sequences loaded
     return sequences  # Return the list of sequences
+
+
 
 
 def smithWaterman(sequences: list,  reference: str, matchScore: int = 2, mismatchPenalty: int = -2, gapPenalty: int = -3):
@@ -807,6 +823,8 @@ def smithWaterman(sequences: list,  reference: str, matchScore: int = 2, mismatc
     return ''.join(reversed(alignedSeqOne)), ''.join(reversed(alignedSeqTwo)), maxScore  # Return the aligned sequences and the score
 
 
+
+
 def compareSequences(reference, sequences, smithWatermanFunc, scoreThreshold=50):
     """
     Compare query sequences with reference sequences using Smith-Waterman algorithm.
@@ -835,6 +853,10 @@ def compareSequences(reference, sequences, smithWatermanFunc, scoreThreshold=50)
                 })
     
     return results  # Return the list of alignment results
+
+
+
+
 
 def alignSequences(args, smithWaterman):
     """
