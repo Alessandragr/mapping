@@ -746,7 +746,7 @@ def parseSam(filePath):
             if line.startswith('@'):  # Skip header lines (lines starting with '@')
                 continue
             parts = line.strip().split('\t')  # Split the line by tabs to get the columns
-            if len(parts) > 9:  # Ensure there are at least 10 columns in the line
+            if len(parts) > 10:  # Ensure there are at least 11 columns in the line
                 readId = parts[0]   # Column 1: Read ID
                 sequence = parts[9]  # Column 10: Sequence
                 sequences.append((readId, sequence))  # Store the read ID and sequence as a tuple

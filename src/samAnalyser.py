@@ -50,9 +50,13 @@ from utils import fileVerifier, countReads, readPerChrom, parseSam,readPerMAPQ, 
 # SamReader.py -i <file> -r <reference> -o <outputFile>   -aS    # Aligns reference and query sequences using an alignment algorithm.
 
 
+<<<<<<< Updated upstream
 # Main script
 import argparse
 
+=======
+############################# MAIN SCRIPT
+>>>>>>> Stashed changes
 def main():
     """
     Main function to handle various SAM file analyses and sequence alignment tasks.
@@ -122,9 +126,15 @@ def main():
         flagDetails = {key: count for key, count in flagCounts.items()}
 
     if args.filterSam:
+        if not args.outputFile:
+            print("Error: Output file path (-o/--outputFile) is required for filtering.")
+            return
         filterSam(args.input, args.outputFile, args.minQ)
 
     if args.mappedRead:
+        if not args.outputFile:
+            print("Error: Output file path (-o/--outputFile) is required for mapped read filtering.")
+            return
         mappedRead(args.input, args.outputFile)
         
     if args.mappedPrimaryReads:
