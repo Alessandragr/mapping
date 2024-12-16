@@ -80,9 +80,9 @@ for fichier in "$@"; do
 
                         # Increment the line counter and stop after the first 3 lines
                         ((line_count++))
-                        if (( line_count == 3 )); then
-                            break
-                        fi
+                        # if (( line_count == 3 )); then
+                        #     break
+                        # fi
                     done < "$script_dir/$fichier"
                     echo "[SUCCESS] The file '$fichier' meets the minimum column count requirement."
                 fi

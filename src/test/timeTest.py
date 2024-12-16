@@ -49,7 +49,7 @@ def fileVerifier(filePath):
     return True
 
 # Path to the log file
-log_file_path = "C:/Users/aless/Downloads/mapping/src/timing_results.log"
+log_file_path = "C:/Users/aless/Downloads/mapping/src/test/timing_results.log"
 
 # Function to log output to a file
 def log_output(message):
@@ -67,7 +67,7 @@ log_output(f"Python function took {python_time:.4f} seconds.")
 print("running bash function")
 # Bash command to measure (make sure the Bash script logic is inside a file or a command string)
 filename = os.path.basename("C:/Users/aless/Downloads/mapping/src/mapping.sam")  # Extract the filename
-bash_command = ["C:/Users/aless/Downloads/mapping/src/standardFileVerifier.sh", filename]
+bash_command = ["C:/Users/aless/Downloads/mapping/src/test/standardFileVerifier.sh", filename]
 
 # Measure the running time of the Bash command
 start_time = time.perf_counter()  # Start time
