@@ -3,7 +3,7 @@
 
 ############### IMPORT MODULES ############### 
 
-import os,re,sys,argparse
+import os, re, sys, argparse
 from collections import defaultdict
 
 from flags import flags
@@ -129,9 +129,15 @@ def main():
         flagDetails = {key: count for key, count in flagCounts.items()}
 
     if args.filterSam:
+        if not args.outputFile:
+            print("Error: Output file path (-o/--outputFile) is required for filtering.")
+            return
         filterSam(args.input, args.outputFile, args.minQ)
 
     if args.mappedRead:
+        if not args.outputFile:
+            print("Error: Output file path (-o/--outputFile) is required for mapped read filtering.")
+            return
         mappedRead(args.input, args.outputFile)
         
     if args.mappedPrimaryReads:
@@ -184,7 +190,7 @@ def main():
     # Call saveResults and pass final_cigar_table_path if needed
     saveResults(
         plot_paths=plot_paths,  # Pass the dictionary containing all paths
-        summary_flag_table_path=plot_paths['summary_flag_table'],  # Assuming this is generated earlier
+        summary_flag_table_path=summary_flag_table_path,  # Assuming this is generated earlier
         final_cigar_table_path=final_cigar_table_path  # Add the final CIGAR table if it exists
     )
 

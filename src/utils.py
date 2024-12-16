@@ -8,17 +8,20 @@ import numpy as np
 import os
 import re
 from collections import defaultdict
+import datetime, shutil
+import math
 from tabulate import tabulate 
 
 from flags import flags
 
 
+
 ############################# FUNCTIONS TO :
 
-## 1/ Check, 
 
 
 
+############################# CHECK 
 def fileVerifier(filePath):
     """
     Check if the file is a valid SAM file.
@@ -70,8 +73,7 @@ def fileVerifier(filePath):
 
 
 
-############################################ READ
-
+############################# READS STAT
 def countReads(filePath, minQ=0):
     """
     Analyze the SAM file to count different types of reads and filter based on MAPQ score,
@@ -98,14 +100,15 @@ def countReads(filePath, minQ=0):
             fields = line.strip().split('\t')
             flag = int(fields[1])
 
-            # Count occurrences of each FLAG description
+            # Count occurrences of each FLAG description     
             for key, description in flags.items():
                 if flag & key:
-                    flagDetails[description] = flagDetails.get(description, 0) + 1
-                    
+                    if flag not in flagDetails:
+                        flagDetails[flag] = {'count': 0, 'description': description}
+                    flagDetails[flag]['count'] += 1
 
             # Check flags for specific categories
-            if flag & 4 or flag & 8:  # Unmapped
+            if flag & 4 or flag & 8:  # Unmapped reads
                 unmapedReads += 1
             elif flag & 1024:  # Duplicated reads
                 duplicatedReads += 1
@@ -117,28 +120,50 @@ def countReads(filePath, minQ=0):
                 if mapq >= minQ:
                     filteredReads += 1
 
-    unmapedReads = (unmapedReads / totalReads) * 100
-    duplicatedReads = (duplicatedReads / totalReads) * 100
-    mappedReads = (mappedReads / totalReads) * 100
-    filteredReads = (filteredReads / totalReads) * 100
+    unmapedReadsPercentage = (unmapedReads / totalReads) * 100
+    duplicatedReadsPercentage = (duplicatedReads / totalReads) * 100
+    mappedReadsPercentage = (mappedReads / totalReads) * 100
+    filteredReadsPercentage = (filteredReads / totalReads) * 100
 
     readstatistics = {
-        "Unmapped Reads (%)": f"{unmapedReads:.2f}%",
-        "Duplicated Reads (%)": f"{duplicatedReads:.2f}%",
-        "Mapped Reads (%)": f"{mappedReads:.2f}%"
+        "Unmapped Reads (%)": f"{unmapedReadsPercentage:.2f}%",
+        "Duplicated Reads (%)": f"{duplicatedReadsPercentage:.2f}%",
+        "Mapped Reads (%)": f"{mappedReadsPercentage:.2f}%"
     }
 
-    # Print the results
-    print(f"\n--- Read Statistics ---")
-    
-    print(f" Percentage of unmapped reads: {unmapedReads:.2f}")
-    print(f"Percentage of duplicated reads: {duplicatedReads:.2f}")
-    print(f"Percentage of mapped reads: {mappedReads:.2f}")
-    print(f"Percentage of filtered reads (MAPQ >= {minQ}): {filteredReads:.2f}")
-    print(f"\n --- Number of reads per flag ---")
-    for description, count in flagDetails.items():
-        print(f"{description}: {count}")
-    print(f"\n")
+    # Stats showed on the terminal to the user
+    print("\n-------------------------- Reads Statistics --------------------------\n")
+
+    print(f"{'Description':<40} {'Percentage (%)':<20} {'Total':<18}")
+    print(f"{'--' * 35}\n")
+
+
+    print(f"{'Unmapped Reads':<40} {unmapedReadsPercentage:.2f}%  {unmapedReads:>18.0f}")
+    print(f"{'Duplicated Reads':<40} {duplicatedReadsPercentage:.2f}%  {duplicatedReads:>18.0f}")
+    print(f"{'Mapped Reads':<40} {mappedReadsPercentage:.2f}%  {mappedReads:>18.0f}")
+    print(f"{'Filtered Reads (MAPQ >= {minQ})':<40} {filteredReadsPercentage:.2f}%  {filteredReads:>18.0f}")
+
+    print(f"\n{'--' * 35}\n")
+
+   
+    print(f"{'Total Reads:':<40} {totalReads:>26}")
+    print(f"{'--' * 35}\n\n\n")
+
+
+    # Display Flag Details Table
+    print(f"{'--' * 20}- Flag Details -{'--' * 20} \n")
+    print(f"{'Flag':<10} {'Description':<55} {'Percentage (%)':<22} {'Total':<34}")
+    print(f"{'--' * 48}\n")
+
+    for key, details in sorted(flagDetails.items()):
+        count = details['count']
+        description = details['description']
+        percentage = (count / totalReads) * 100 if totalReads > 0 else 0
+        print(f"{key:<10} {description:<40} {percentage:>15.2f}%  {count:>18}")
+
+
+    print(f"\n{'--' * 48}\n")
+
 
     return readstatistics, flagDetails, totalReads
 
@@ -148,11 +173,15 @@ def countReads(filePath, minQ=0):
 
 def readPerChrom(filePath):
     """
-    Count the number of reads mapped to each chromosome.
+    Count the number of reads mapped to each chromosome. Also show some stats on the terminal: mean and standard deviation
     
     :param filePath: path to the SAM file
     """
     chromosomeCounts = {}
+    totalReads = 0
+    chromosomeMAPQSum = {}  # Sum the values of MAPQ per chromosome
+    chromosomeMAPQCount = {}  # Count the number of reads per chromosome
+    chromosomeMAPQSquaresSum = {}  # Sum the squares of the values of MAPQ per chromosome
 
     with open(filePath, 'r') as file:
         for line in file:
@@ -162,14 +191,40 @@ def readPerChrom(filePath):
 
             fields = line.strip().split('\t')
             chromosome = fields[2]
+            mapq = int(fields[4])  # MAPQ score
 
             flag = int(fields[1])
             # Only count reads where both the read and its mate are mapped
             if flag & 4 == 0 and flag & 8 == 0:  # Exclude unmapped reads and mates
                 chromosomeCounts[chromosome] = chromosomeCounts.get(chromosome, 0) + 1
-    print("\n--- Reads per Chromosome ---")
-    for chrom, count in chromosomeCounts.items():
-        print(f"{chrom}: {count}")
+                chromosomeMAPQSum[chromosome] = chromosomeMAPQSum.get(chromosome, 0) + mapq
+                chromosomeMAPQCount[chromosome] = chromosomeMAPQCount.get(chromosome, 0) + 1
+                chromosomeMAPQSquaresSum[chromosome] = chromosomeMAPQSquaresSum.get(chromosome, 0) + mapq**2
+                totalReads += 1
+                
+    # Stats showed on the terminal to the user:
+    print(f"\n{'--' * 20}  Reads per Chromosome -{'--' * 20}\n")
+
+    print(f"{'Chromosome':<20} {'Percentage (%)':<18} {'Total':<18} {'Mean MAPQ':<18} {'Standard deviation MAPQ':<18}")
+    print(f"{'--' * 52}\n")
+
+    for chrom in sorted(chromosomeCounts.keys()):
+        count = chromosomeCounts[chrom]
+        percentage = (count / totalReads) * 100
+        avgMAPQ = chromosomeMAPQSum[chrom] / chromosomeMAPQCount[chrom] if chromosomeMAPQCount[chrom] > 0 else 0
+        # Standard deviation
+        variance = (chromosomeMAPQSquaresSum[chrom] / chromosomeMAPQCount[chrom]) - (avgMAPQ ** 2)
+        stddev = math.sqrt(variance) if variance > 0 else 0
+        print(f"{chrom:<6} {percentage:>18.2f}% {count:>15} {avgMAPQ:>20.2f} {stddev:>25.2f}")
+
+
+    print(f"\n{'--' * 52}\n")
+    print(f"{'Total Reads:':<17} {totalReads:>27}")
+    print(f"{'--' * 52}\n")
+
+
+
+
 
 
 def readPerMAPQ(filePath):
@@ -180,10 +235,11 @@ def readPerMAPQ(filePath):
     :return: dictionary with counts of reads per MAPQ score
     """
     mappingQCount = {}
+    totalReads = 0
 
     with open(filePath, 'r') as file:
         for line in file:
-              # Ignore headers
+            # Ignore headers
             if line.startswith('@'):
                 continue
 
@@ -193,14 +249,23 @@ def readPerMAPQ(filePath):
             flag = int(fields[1])
             if flag & 4 == 0 and flag & 8 == 0:  # if bit 4 and 8 are not set, the read is mapped
                 mappingQCount[mapq] = mappingQCount.get(mapq, 0) + 1
+                totalReads += 1
 
-    
-    print("\n--- Reads per Mapping Quality ---")
-    print(f"{'Mapping quality ':<10}{'Number of reads':>10}")
-    print("-" * 22)
+    print("\n\n\n--------------------- Reads per Mapping Quality ----------------------\n")
+
+    print(f"{'Mapping quality ':<30}{'Percentage (%)':<30} {'Total':<18}")
+
+    print(f"\n{'--' * 35}\n")
+
     for mapq, count in sorted(mappingQCount.items()):
-        print(f"{mapq:<10}{count:>10}")
-    
+        percentage = (count / totalReads) * 100
+        print(f"{mapq:<10} {percentage:>26.2f}% {count:>27}")
+
+    print(f"\n{'--' * 35}\n")
+
+    print(f"{'Total Reads:':<39} {totalReads:>26}")
+    print(f"{'--' * 35}\n")
+
     return mappingQCount
 
 
@@ -230,19 +295,18 @@ def countReadsByFlags(filePath):
                 print(f"Warning: Invalid flag value in line: {line.strip()}")
                 continue  # Skip lines where flag is not an integer
                 
-                # Count occurrences of each flag
+            # Count occurrences of each flag
             if flag in flagCounts:
                 flagCounts[flag] += 1
             else:
                 flagCounts[flag] = 1
-    print("The flag count was executed succefully, you can see results in the graphs ")
+    print("The flag count was executed succefully!")
     return flagCounts  # Return the dictionary
     
 
 
 
-###Filter Sam file
-
+############################# FILTER FILES
 def filterSam(filePath, outputFile, minQ=30):
     """
     Filters the SAM file by MAPQ score and writes the filtered reads to a new file.
@@ -269,6 +333,7 @@ def filterSam(filePath, outputFile, minQ=30):
     print(" Filtered sam file was created succesfully")
 
 
+
 def mappedRead(filePath, outputFile):
     """
     Filters the SAM file and keeping only the mapped reads  to a new file.
@@ -289,7 +354,7 @@ def mappedRead(filePath, outputFile):
             flag = int(fields[1])  # 
 
             # Filter based on MAPQ score
-            if flag & 4 == 0:  # if bit 4 is not set, the read is mapped
+            if flag & 4 == 0 and flag & 8 == 0:  # if bit 4 is not set, the read is mapped
                 outfile.write(line)
     print(" Filtered sam file was created succesfully")            
     
@@ -339,10 +404,7 @@ def mappedPrimaryReads(filePath, outputFile):
 
     
 
-
-
-
-################################## 3 plots
+################################## DATA VIZUALIZATION
 
 def plotReadsPerMAPQ(mappingQCount, outputFile="reads_per_mapq.png"):
     """
@@ -392,6 +454,11 @@ def plotReadsPerMAPQ(mappingQCount, outputFile="reads_per_mapq.png"):
     return outputFile
 
 
+
+
+
+
+
 def plotFlagCounts(flagCounts, outputFile="flag_counts.png"):
     """
     Plot the flag counts as a bar chart, annotate with percentages, and save the plot as a PNG file.
@@ -434,6 +501,12 @@ def plotFlagCounts(flagCounts, outputFile="flag_counts.png"):
         plt.close()
 
     return df
+
+
+
+
+
+
 
 
 def plotReadsPercentage(readstatistics, outputFile="read_distribution.png"):
@@ -534,15 +607,21 @@ def summaryTable(filePath, outputFile="flag_summary.txt"):
     except Exception as e:
         print(f"Error creating the summary table: {e}")
 
+
+
+
+
+############################# EXECUTE FLAGS AND CREATE PLOTS
 def executePlots(filePath, outputDir, minQ=0):
     """
-    Execute analysis on the SAM file, generating plots and a summary table.
-
-    :param filePath: Path to the SAM file to analyze.
-    :param outputDir: Directory where output files will be saved.
-    :param minQ: Minimum MAPQ score for filtering reads (default 0).
-
-    :returns: Tuple containing paths to plots, read statistics, and summary table.
+    Execute the analysis of flag statistics and read statistics on the SAM file,
+    generating a bar chart, pie chart, and MAPQ distribution, and generating a flag summary file.
+    
+    :param filePath (str): Path to the SAM file to analyze.
+    :param outputDir (str): Directory where output files will be saved.
+    :param minQ (int): Minimum MAPQ score for filtering reads. Defaults to 0.
+    
+    :returns: tuple: Paths to the generated plot images, read statistics, and summary flag table file.
     """
     try:
         # Ensure the output directory exists
@@ -724,6 +803,15 @@ def saveResults(plot_paths, summary_flag_table_path, final_cigar_table_path="Fin
     """
 
     # Write the HTML content to a file
+    with open(html_output_path, 'w') as f:
+        f.write(html_content)
+    
+    print(f"HTML report saved to {html_output_path}")
+    
+    
+    
+    
+############################# MAPPING 
     try:
         with open(html_output_path, 'w') as f:
             f.write(html_content)
@@ -911,12 +999,14 @@ def parseSam(filePath):
             if line.startswith('@'):  # Skip header lines (lines starting with '@')
                 continue
             parts = line.strip().split('\t')  # Split the line by tabs to get the columns
-            if len(parts) > 9:  # Ensure there are at least 10 columns in the line
+            if len(parts) > 10:  # Ensure there are at least 11 columns in the line
                 readId = parts[0]   # Column 1: Read ID
                 sequence = parts[9]  # Column 10: Sequence
                 sequences.append((readId, sequence))  # Store the read ID and sequence as a tuple
     print(f"Loaded {len(sequences)} sequences from the file.")  # Print the number of sequences loaded
     return sequences  # Return the list of sequences
+
+
 
 
 def smithWaterman(sequences: list,  reference: str, matchScore: int = 2, mismatchPenalty: int = -2, gapPenalty: int = -3):
@@ -972,6 +1062,8 @@ def smithWaterman(sequences: list,  reference: str, matchScore: int = 2, mismatc
     return ''.join(reversed(alignedSeqOne)), ''.join(reversed(alignedSeqTwo)), maxScore  # Return the aligned sequences and the score
 
 
+
+
 def compareSequences(reference, sequences, smithWatermanFunc, scoreThreshold=50):
     """
     Compare query sequences with reference sequences using Smith-Waterman algorithm.
@@ -1000,6 +1092,10 @@ def compareSequences(reference, sequences, smithWatermanFunc, scoreThreshold=50)
                 })
     
     return results  # Return the list of alignment results
+
+
+
+
 
 def alignSequences(args, smithWaterman):
     """
