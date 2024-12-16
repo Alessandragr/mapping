@@ -43,7 +43,7 @@ To run this tool, you need:
 Install the necessary libraries using `pip`:
 
 ```bash
-pip install matplotlib pandas numpy argparser
+pip install matplotlib pandas numpy argparser tabulate
 ```
 
 ### Usage
