@@ -1,9 +1,8 @@
-// The package.json is not required to run README-MD-GENERATOR
 {
-    "name": "SamReader"
+    "name": "sam-analyzer",
     "version": "0.1",
     "description": "Analyze Sam file  and extract statistics about the reads",
-    "author": "Amoukou Najat" "Alessandra Gonçalves",
+    "author": "Amoukou Najat, Alessandra Gonçalves",
     "license": "xxx",
     "homepage": "https://github.com/Alessandragr/mapping/blob/main/README.md",
     "repository": {

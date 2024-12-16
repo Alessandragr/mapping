@@ -3,12 +3,12 @@
 
 ############### IMPORT MODULES ############### 
 
-import os,re,sys,argparse
+import os, re, sys, argparse
 from collections import defaultdict
 
 from flags import flags
 
-from utils import fileVerifier, countReads, readPerChrom, parseSam,readPerMAPQ, countReadsByFlags, alignSequences,smithWaterman, saveResults,executePlots, filterSam, mappedRead
+from utils import fileVerifier, countReads, readPerChrom, parseSam, mappedPrimaryReads, readPerMAPQ, countReadsByFlags, alignSequences,smithWaterman, saveResults,executePlots, filterSam, mappedRead
 
 
 
@@ -49,14 +49,6 @@ from utils import fileVerifier, countReads, readPerChrom, parseSam,readPerMAPQ, 
 # SamReader.py -i <file> -cR -sR                                 # Combines read statistics calculation with saving results to HTML.
 # SamReader.py -i <file> -r <reference> -o <outputFile>   -aS    # Aligns reference and query sequences using an alignment algorithm.
 
-
-<<<<<<< Updated upstream
-# Main script
-import argparse
-
-=======
-############################# MAIN SCRIPT
->>>>>>> Stashed changes
 def main():
     """
     Main function to handle various SAM file analyses and sequence alignment tasks.
@@ -142,7 +134,7 @@ def main():
 
     if args.executePlots:
         # Execute flag stats and retrieve results
-        flag_plot_path, pie_plot_path, mappingq_plot_path, readstatistics, mappingQCount, summary_flag_table_path = executePlots(args.input, args.minQ,args.outputDir)
+        flag_plot_path, pie_plot_path, mappingq_plot_path, readstatistics, mappingQCount, summary_flag_table_path = executePlots(args.input,args.outputDir,args.minQ)
 
         # Collect the generated plot paths
         plot_paths = [flag_plot_path, pie_plot_path, mappingq_plot_path]
@@ -150,13 +142,7 @@ def main():
         # Update flag counts based on the SAM file
         flagCounts = countReadsByFlags(args.input)
 
-        # Create flag details dictionary, ensuring it contains flag counts and descriptions
-        flagDetails = {flag: {'count': count, 'description': flags.get(flag, 'Unknown flag')} for flag, count in flagCounts.items()}
-
-        print(f"Flag Details: {flagDetails}")
-        print(f"Read Statistics: {readstatistics}")
-        print(f"Mapping Quality Counts: {mappingQCount}")
-
+        
     # Save results to HTML if required
     if args.saveResults:
         if not plot_paths:
@@ -169,7 +155,6 @@ def main():
 
         saveResults(
             plot_paths=plot_paths,
-            flagDetails=flagDetails,
             summary_flag_table_path=summary_flag_table_path
         )
 
