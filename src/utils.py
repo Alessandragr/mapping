@@ -206,6 +206,7 @@ def readPerChrom(filePath):
         count = chromosomeCounts[chrom]
         percentage = (count / totalReads) * 100
         avgMAPQ = chromosomeMAPQSum[chrom] / chromosomeMAPQCount[chrom] if chromosomeMAPQCount[chrom] > 0 else 0
+
         # Standard deviation
         variance = (chromosomeMAPQSquaresSum[chrom] / chromosomeMAPQCount[chrom]) - (avgMAPQ ** 2)
         stddev = math.sqrt(variance) if variance > 0 else 0
@@ -847,11 +848,17 @@ def toStringOutput(line):
     cols = line.split("\t")
     return f">{cols[0]}\n{cols[9]}\n"  # Example: FASTA header and sequence.
 
+
+
+
 def flagBinary(flag):
     """Converts a flag into a binary string of length 12."""
     flagB = bin(int(flag))[2:]  # Convert to binary and remove '0b'
     flagB = flagB.zfill(12)     # Pad with zeros to ensure 12 bits
     return flagB
+
+
+
 
 def unmapped(sam_lines):
     """Analyze unmapped reads."""
@@ -868,6 +875,9 @@ def unmapped(sam_lines):
         summary_file.write(f"Total unmapped reads: {unmapped_count}\n")
     return unmapped_count
 
+
+
+
 def partiallyMapped(sam_lines):
     """Analyze partially mapped reads."""
     partially_mapped_count = 0
@@ -882,6 +892,8 @@ def partiallyMapped(sam_lines):
                 partially_mapped_fasta.write(toStringOutput(line))
         summary_file.write(f"Total partially mapped reads: {partially_mapped_count}\n")
     return partially_mapped_count
+
+
 
 
 def processSAMFileAndCigar(filePath):
@@ -929,6 +941,7 @@ def readCigarOperations(cigar):
 
 
 
+
 def percentMutation(dico):
     """Calculate the percentage of each mutation type."""
     total = sum(dico.values())
@@ -936,6 +949,10 @@ def percentMutation(dico):
         return "0.00;" * 9
     mutList = ['M', 'I', 'D', 'S', 'H', 'N', 'P', 'X', '=']
     return ";".join(f"{(dico.get(mut, 0) * 100 / total):.2f}" for mut in mutList) + ";"
+
+
+
+
 
 def globalPercentCigar():
     """Global representation of CIGAR distribution."""
@@ -977,6 +994,19 @@ def globalPercentCigar():
             if nbReads == 0:
                 FinalCigar.write("No reads to calculate global CIGAR distribution.\n")
                 return
+            
+            # Calculate percentages for each operation
+            M_percent = (M / nbReads) * 100
+            I_percent = (I / nbReads) * 100
+            D_percent = (D / nbReads) * 100
+            S_percent = (S / nbReads) * 100
+            H_percent = (H / nbReads) * 100
+            N_percent = (N / nbReads) * 100
+            P_percent = (P / nbReads) * 100
+            X_percent = (X / nbReads) * 100
+            Egal_percent = (Egal / nbReads) * 100
+
+
 
             # Calculate and write the global CIGAR statistics
             FinalCigar.write(f"Global cigar mutation observed:\n"
@@ -990,8 +1020,32 @@ def globalPercentCigar():
                              f"Sequence Match: {Egal/nbReads:.2f}\n"
                              f"Sequence Mismatch: {X/nbReads:.2f}\n")
 
+
+            # Print the statistics to the terminal in a tabular format
+            print("\n------------------------ CIGAR Distribution Stats ------------------------\n")
+            print(f"{'Description':<40} {'Percentage (%)':<25} {'Total':<18}")
+            print(f"{'--' * 35}\n")
+                
+            print(f"{'Alignment Match':<40} {M_percent:<20.2f} {M:>18.0f}")
+            print(f"{'Insertion':<40} {I_percent:<20.2f} {I:>18.0f}")
+            print(f"{'Deletion':<40} {D_percent:<20.2f} {D:>18.0f}")
+            print(f"{'Skipped Region':<40} {S_percent:<20.2f} {S:>18.0f}")
+            print(f"{'Soft Clipping':<40} {H_percent:<20.2f} {H:>18.0f}")
+            print(f"{'Hard Clipping':<40} {N_percent:<20.2f} {N:>18.0f}")
+            print(f"{'Padding':<40} {P_percent:<20.2f} {P:>18.0f}")
+            print(f"{'Sequence Match':<40} {Egal_percent:<20.2f} {Egal:>18.0f}")
+            print(f"{'Sequence Mismatch':<40} {X_percent:<20.2f} {X:>18.0f}")
+                
+            print(f"\n{'--' * 35}\n")
+            print(f"{'Total Reads:':<40} {nbReads:>26}")
+            print(f"{'--' * 35}\n\n\n")
+
+
             print("Final Cigar file created: Final_Cigar_table.txt")
             return "Final_Cigar_table.txt"
+
+
+
 
     except FileNotFoundError:
         print("Error: outputTable_cigar.txt not found.")
