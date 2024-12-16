@@ -18,6 +18,9 @@ This is a Python-based command-line tool for analyzing SAM (Sequence Alignment/M
     - Filterring by mapping quality
     - FIltering by only keeping mapped reads
     - Filtering by keeping primarly mapped reads
+- **Analyse Cigar**:
+    - Calculate the percentage of eauc mutations
+    
   
 
 ## Requirements
@@ -29,6 +32,7 @@ To run this tool, you need:
   - `numpy`
   - `os`
   - `argparse`
+  - `re`
 
 ### Install Required Libraries
 Install the necessary libraries using `pip`:
@@ -47,6 +51,7 @@ pip install matplotlib pandas numpy argparser
 | `-h` or `--help`        | Displays help information.                                                                  |
 | `-i` or `--input`       | Specifies the path to the input SAM file (.sam).                                            |
 | `-o` or `--output`      | Specifies the path to the output file.                                                      |
+|`-oD` or `--outputDir`    | Specifies the directory for output files.
 | `-m` or `--minQ`       | Minimum MAPQ score for filtering reads.                                          |
 | `-r` or `--reference`       | Reference sequence for alignment.                                           |
 | `-cR` or `--countReads` | Counts total, mapped, unmapped, and duplicated reads, with an option for MAPQ filtering.    |
@@ -57,7 +62,7 @@ pip install matplotlib pandas numpy argparser
 | `-mr` or `--mappedRead` | Filters the SAM file by mapped reads and creates a filtered SAM file.                       |
 | `-mPR` or `--mappedPrimarlyReads` | Filters the SAM file by primarly  mapped reads and creates a filtered SAM file.                       |
 | `-eP` or `--executePlots` | Executes FLAG analysis and generates plots.                                           |
-| `-aS` or `--alignSequences ` | Aligns reference and query sequences using an alignment algorithm.                                            |
+| `-gPC` or `--globalPercentageCigar `| Calculate and display global CIGAR mutation percentages.                                          |
 | `-sR`  or `--saveResults` |  Saves results (including plots) to an HTML file.                                        |
 
 ### Command Synopsis
@@ -77,14 +82,16 @@ Here are examples of how to use the tool:
 | `SamAnalyser.py -i <file> -mR -o <outputFile>`                | Filters SAM file to keep only mapped reads.                                                    |
 | `SamAnalyser.py -i <file> -mPR -o <outputFile>`               | Filters SAM file to keep only primarily mapped reads.                                          |
 | `SamAnalyser.py -i <file> -eP`                                | Executes Flag Stats analysis and generates plots.                                              |                            |
-| `SamAnalyser.py -i <file> -eP -sR`                            | Combines read statistics plots with saving results to HTML.                             |
-| `SamAnalyser.py -i <file> -r <reference> -o <outputFile> -aS` | Aligns reference and query sequences using an alignment algorithm.                             |
+| `SamAnalyser.py -i <file> -eP -sR -oD <outputDir> `                             | Combines read statistics plots with saving results to HTML.                             |
+| ` SamReader.py -i <file> -gPC -eP -sR  -oD <outputDir> `       |   Combines plots creation with saving results to HTML and cigar analysis.                    |
+
 
 
 #### Help and Validation
 ```bash
 python3 SamAnalyser.py -h
 python3 SamAnalyser.py --help
+# To check if file is valid
 python3 SamAnalyser.py -i path/to/input.sam
 ```
   
