@@ -8,7 +8,7 @@ from collections import defaultdict
 
 from flags import flags
 
-from utils import fileVerifier, countReads, readPerChrom, parseSam, mappedPrimaryReads, readPerMAPQ, countReadsByFlags, alignSequences,smithWaterman, saveResults,executePlots, filterSam, mappedRead
+from utils import fileVerifier, countReads, readPerChrom, parseSam,readPerMAPQ, countReadsByFlags, alignSequences,smithWaterman, saveResults,executePlots, filterSam, mappedRead,mappedPrimaryReads,globalPercentCigar,processSAMFileAndCigar
 
 
 
@@ -17,7 +17,8 @@ from utils import fileVerifier, countReads, readPerChrom, parseSam, mappedPrimar
 # OPTION LIST:
 # -h or --help: Displays help information.
 # -i or --input: Specifies the path to the input SAM file (.sam).
-# -o or --output: Specifies the path to the output file.
+# -o or --outputFile: Specifies the path to the output file.
+# -oD or --outputDir: Specifies the directory for output files.
 # -cR or --countReads: Counts total reads, mapped reads, unmapped reads, duplicated reads, with a filtering option on the mapping quality.
 # -rC or --readPerChrom: Counts the number of reads per chromosome.
 # -rMQ or --readPerMAPQ: Counts the number of reads for each MAPQ score.
@@ -30,8 +31,7 @@ from utils import fileVerifier, countReads, readPerChrom, parseSam, mappedPrimar
 # -eP or --executePlots: Executes Flag Stats analysis and generates plots.
 # -aS or --alignSequences: Aligns the reference sequence and query sequence using Smith-Waterman or another alignment algorithm.
 # -r or --reference: Specifies the path to the reference sequence for alignment.
-# -q or --query: Specifies the path to the query sequence for alignment.
-
+# -gPC or --globalPercentCigar: Calculate and display global CIGAR mutation percentages.
 
 # SYNOPSIS:
 # SamReader.py -h or --help                                      # Displays help.
@@ -46,8 +46,14 @@ from utils import fileVerifier, countReads, readPerChrom, parseSam, mappedPrimar
 # SamReader.py -i <file> -mPR -o <outputFile>                    # Filters SAM file to keep only primarily mapped reads.
 # SamReader.py -i <file> -eP                                     # Executes Flag Stats analysis and generates plots.
 # SamReader.py -i <file> -cRF -eP                                # Combines flag-based read counting with Flag Stats plot generation.
-# SamReader.py -i <file> -cR -sR                                 # Combines read statistics calculation with saving results to HTML.
+# SamReader.py -i <file> -eP -sR -oD <outputDir>                                # Combines plots creation with saving results to HTML.
 # SamReader.py -i <file> -r <reference> -o <outputFile>   -aS    # Aligns reference and query sequences using an alignment algorithm.
+# SamReader.py -i <file> -gPC                                    # Calculates and displays global CIGAR mutation percentages.
+# SamReader.py -i <file> -gPC -eP -sR  -oD <outputDir>           # Combines plots creation with saving results to HTML and cigar analysis.
+
+
+# Main script
+import argparse
 
 def main():
     """
@@ -86,6 +92,11 @@ def main():
     # Arguments for alignSequences
     parser.add_argument('-r', '--reference', help="Reference sequence for alignment.")
     parser.add_argument('-aS', '--alignSequences', action='store_true', help="Align reference and query sequences.")
+    
+    
+    
+    # Arguments for CIGAR ANALYSIS
+    parser.add_argument('-gPC','--globalPercentCigar', action='store_true', help="Calculate and display global CIGAR mutation percentages.")
 
     args = parser.parse_args()
 
@@ -132,32 +143,6 @@ def main():
     if args.mappedPrimaryReads:
         mappedPrimaryReads(args.input, args.outputFile)
 
-    if args.executePlots:
-        # Execute flag stats and retrieve results
-        flag_plot_path, pie_plot_path, mappingq_plot_path, readstatistics, mappingQCount, summary_flag_table_path = executePlots(args.input,args.outputDir,args.minQ)
-
-        # Collect the generated plot paths
-        plot_paths = [flag_plot_path, pie_plot_path, mappingq_plot_path]
-
-        # Update flag counts based on the SAM file
-        flagCounts = countReadsByFlags(args.input)
-
-        
-    # Save results to HTML if required
-    if args.saveResults:
-        if not plot_paths:
-            print("Error: Plot paths are empty. Ensure executePlots is run before saving results.")
-            return
-
-        if not flagCounts:
-            print("Error: Flag counts are empty. Ensure countReadsByFlags returns valid results.")
-            return
-
-        saveResults(
-            plot_paths=plot_paths,
-            summary_flag_table_path=summary_flag_table_path
-        )
-
     # Call alignSequences if the specific argument is provided
     if args.alignSequences:
     # Vérification des chemins nécessaires
@@ -184,6 +169,42 @@ def main():
 
         # Si tout est en ordre, appel de la fonction alignSequences
         alignSequences(args, smithWaterman)
+    if args.globalPercentCigar:
+        processSAMFileAndCigar(args.input)
+        globalPercentCigar()
+    
+    if args.executePlots:
+        # Execute the function and retrieve results
+        plot_paths = executePlots(
+            filePath=args.input,
+            outputDir="result",
+            outputFile="analysis",
+            minQ=args.minQ
+        )
+
+
+# Ensure the plot_paths is populated and then save results
+    if args.saveResults:
+        if not plot_paths:
+            print("Error: Plot paths are empty. Ensure executePlots is run before saving results.")
+            return
+
+        # Safely get the summary flag table path
+        summary_flag_table_path = plot_paths.get('summary_flag_table')
+
+        # Get the path to the final CIGAR table
+        final_cigar_table_path = globalPercentCigar()
+
+        # Proceed only if the summary_flag_table_path exists
+        if summary_flag_table_path:
+            saveResults(
+                plot_paths=plot_paths,  # Pass the dictionary containing all paths
+                summary_flag_table_path=summary_flag_table_path,
+                final_cigar_table_path=final_cigar_table_path
+            )
+        else:
+            print("Error: Summary flag table path is not available. Ensure executePlots ran correctly.")
+
 
 
 if __name__ == "__main__":
