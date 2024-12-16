@@ -7,8 +7,11 @@ import pandas as pd
 import numpy as np
 import os
 from collections import defaultdict
+import datetime, shutil
+import math
 
 from flags import flags
+
 
 
 ############################# FUNCTIONS TO :
@@ -95,14 +98,15 @@ def countReads(filePath, minQ=0):
             fields = line.strip().split('\t')
             flag = int(fields[1])
 
-            # Count occurrences of each FLAG description
+            # Count occurrences of each FLAG description     
             for key, description in flags.items():
                 if flag & key:
-                    flagDetails[description] = flagDetails.get(description, 0) + 1
-                    
+                    if flag not in flagDetails:
+                        flagDetails[flag] = {'count': 0, 'description': description}
+                    flagDetails[flag]['count'] += 1
 
             # Check flags for specific categories
-            if flag & 4 or flag & 8:  # Unmapped
+            if flag & 4 or flag & 8:  # Unmapped reads
                 unmapedReads += 1
             elif flag & 1024:  # Duplicated reads
                 duplicatedReads += 1
@@ -114,28 +118,50 @@ def countReads(filePath, minQ=0):
                 if mapq >= minQ:
                     filteredReads += 1
 
-    unmapedReads = (unmapedReads / totalReads) * 100
-    duplicatedReads = (duplicatedReads / totalReads) * 100
-    mappedReads = (mappedReads / totalReads) * 100
-    filteredReads = (filteredReads / totalReads) * 100
+    unmapedReadsPercentage = (unmapedReads / totalReads) * 100
+    duplicatedReadsPercentage = (duplicatedReads / totalReads) * 100
+    mappedReadsPercentage = (mappedReads / totalReads) * 100
+    filteredReadsPercentage = (filteredReads / totalReads) * 100
 
     readstatistics = {
-        "Unmapped Reads (%)": f"{unmapedReads:.2f}%",
-        "Duplicated Reads (%)": f"{duplicatedReads:.2f}%",
-        "Mapped Reads (%)": f"{mappedReads:.2f}%"
+        "Unmapped Reads (%)": f"{unmapedReadsPercentage:.2f}%",
+        "Duplicated Reads (%)": f"{duplicatedReadsPercentage:.2f}%",
+        "Mapped Reads (%)": f"{mappedReadsPercentage:.2f}%"
     }
 
-    # Print the results
-    print(f"\n--- Read Statistics ---")
-    
-    print(f" Percentage of unmapped reads: {unmapedReads:.2f}")
-    print(f"Percentage of duplicated reads: {duplicatedReads:.2f}")
-    print(f"Percentage of mapped reads: {mappedReads:.2f}")
-    print(f"Percentage of filtered reads (MAPQ >= {minQ}): {filteredReads:.2f}")
-    print(f"\n --- Number of reads per flag ---")
-    for description, count in flagDetails.items():
-        print(f"{description}: {count}")
-    print(f"\n")
+    # Stats showed on the terminal to the user
+    print("\n-------------------------- Reads Statistics --------------------------\n")
+
+    print(f"{'Description':<40} {'Percentage (%)':<20} {'Total':<18}")
+    print(f"{'--' * 35}\n")
+
+
+    print(f"{'Unmapped Reads':<40} {unmapedReadsPercentage:.2f}%  {unmapedReads:>18.0f}")
+    print(f"{'Duplicated Reads':<40} {duplicatedReadsPercentage:.2f}%  {duplicatedReads:>18.0f}")
+    print(f"{'Mapped Reads':<40} {mappedReadsPercentage:.2f}%  {mappedReads:>18.0f}")
+    print(f"{'Filtered Reads (MAPQ >= {minQ})':<40} {filteredReadsPercentage:.2f}%  {filteredReads:>18.0f}")
+
+    print(f"\n{'--' * 35}\n")
+
+   
+    print(f"{'Total Reads:':<40} {totalReads:>26}")
+    print(f"{'--' * 35}\n\n\n")
+
+
+    # Display Flag Details Table
+    print(f"{'--' * 20}- Flag Details -{'--' * 20} \n")
+    print(f"{'Flag':<10} {'Description':<55} {'Percentage (%)':<22} {'Total':<34}")
+    print(f"{'--' * 48}\n")
+
+    for key, details in sorted(flagDetails.items()):
+        count = details['count']
+        description = details['description']
+        percentage = (count / totalReads) * 100 if totalReads > 0 else 0
+        print(f"{key:<10} {description:<40} {percentage:>15.2f}%  {count:>18}")
+
+
+    print(f"\n{'--' * 48}\n")
+
 
     return readstatistics, flagDetails, totalReads
 
@@ -145,11 +171,15 @@ def countReads(filePath, minQ=0):
 
 def readPerChrom(filePath):
     """
-    Count the number of reads mapped to each chromosome.
+    Count the number of reads mapped to each chromosome. Also show some stats on the terminal: mean and standard deviation
     
     :param filePath: path to the SAM file
     """
     chromosomeCounts = {}
+    totalReads = 0
+    chromosomeMAPQSum = {}  # Sum the values of MAPQ per chromosome
+    chromosomeMAPQCount = {}  # Count the number of reads per chromosome
+    chromosomeMAPQSquaresSum = {}  # Sum the squares of the values of MAPQ per chromosome
 
     with open(filePath, 'r') as file:
         for line in file:
@@ -159,14 +189,36 @@ def readPerChrom(filePath):
 
             fields = line.strip().split('\t')
             chromosome = fields[2]
+            mapq = int(fields[4])  # MAPQ score
 
             flag = int(fields[1])
             # Only count reads where both the read and its mate are mapped
             if flag & 4 == 0 and flag & 8 == 0:  # Exclude unmapped reads and mates
                 chromosomeCounts[chromosome] = chromosomeCounts.get(chromosome, 0) + 1
-    print("\n--- Reads per Chromosome ---")
-    for chrom, count in chromosomeCounts.items():
-        print(f"{chrom}: {count}")
+                chromosomeMAPQSum[chromosome] = chromosomeMAPQSum.get(chromosome, 0) + mapq
+                chromosomeMAPQCount[chromosome] = chromosomeMAPQCount.get(chromosome, 0) + 1
+                chromosomeMAPQSquaresSum[chromosome] = chromosomeMAPQSquaresSum.get(chromosome, 0) + mapq**2
+                totalReads += 1
+                
+    # Stats showed on the terminal to the user:
+    print(f"\n{'--' * 20}  Reads per Chromosome -{'--' * 20}\n")
+
+    print(f"{'Chromosome':<20} {'Percentage (%)':<18} {'Total':<18} {'Mean MAPQ':<18} {'Standard deviation MAPQ':<18}")
+    print(f"{'--' * 52}\n")
+
+    for chrom in sorted(chromosomeCounts.keys()):
+        count = chromosomeCounts[chrom]
+        percentage = (count / totalReads) * 100
+        avgMAPQ = chromosomeMAPQSum[chrom] / chromosomeMAPQCount[chrom] if chromosomeMAPQCount[chrom] > 0 else 0
+        # Standard deviation
+        variance = (chromosomeMAPQSquaresSum[chrom] / chromosomeMAPQCount[chrom]) - (avgMAPQ ** 2)
+        stddev = math.sqrt(variance) if variance > 0 else 0
+        print(f"{chrom:<6} {percentage:>18.2f}% {count:>15} {avgMAPQ:>20.2f} {stddev:>25.2f}")
+
+
+    print(f"\n{'--' * 52}\n")
+    print(f"{'Total Reads:':<17} {totalReads:>27}")
+    print(f"{'--' * 52}\n")
 
 
 
@@ -179,10 +231,11 @@ def readPerMAPQ(filePath):
     :return: dictionary with counts of reads per MAPQ score
     """
     mappingQCount = {}
+    totalReads = 0
 
     with open(filePath, 'r') as file:
         for line in file:
-              # Ignore headers
+            # Ignore headers
             if line.startswith('@'):
                 continue
 
@@ -192,14 +245,23 @@ def readPerMAPQ(filePath):
             flag = int(fields[1])
             if flag & 4 == 0 and flag & 8 == 0:  # if bit 4 and 8 are not set, the read is mapped
                 mappingQCount[mapq] = mappingQCount.get(mapq, 0) + 1
+                totalReads += 1
 
-    
-    print("\n--- Reads per Mapping Quality ---")
-    print(f"{'Mapping quality ':<10}{'Number of reads':>10}")
-    print("-" * 22)
+    print("\n\n\n--------------------- Reads per Mapping Quality ----------------------\n")
+
+    print(f"{'Mapping quality ':<30}{'Percentage (%)':<30} {'Total':<18}")
+
+    print(f"\n{'--' * 35}\n")
+
     for mapq, count in sorted(mappingQCount.items()):
-        print(f"{mapq:<10}{count:>10}")
-    
+        percentage = (count / totalReads) * 100
+        print(f"{mapq:<10} {percentage:>26.2f}% {count:>27}")
+
+    print(f"\n{'--' * 35}\n")
+
+    print(f"{'Total Reads:':<39} {totalReads:>26}")
+    print(f"{'--' * 35}\n")
+
     return mappingQCount
 
 
@@ -229,12 +291,12 @@ def countReadsByFlags(filePath):
                 print(f"Warning: Invalid flag value in line: {line.strip()}")
                 continue  # Skip lines where flag is not an integer
                 
-                # Count occurrences of each flag
+            # Count occurrences of each flag
             if flag in flagCounts:
                 flagCounts[flag] += 1
             else:
                 flagCounts[flag] = 1
-    print("The flag count was executed succefully, you can see results in the graphs ")
+    print("The flag count was executed succefully!")
     return flagCounts  # Return the dictionary
     
 
@@ -288,7 +350,7 @@ def mappedRead(filePath, outputFile):
             flag = int(fields[1])  # 
 
             # Filter based on MAPQ score
-            if flag & 4 == 0:  # if bit 4 is not set, the read is mapped
+            if flag & 4 == 0 and flag & 8 == 0:  # if bit 4 is not set, the read is mapped
                 outfile.write(line)
     print(" Filtered sam file was created succesfully")            
     
@@ -335,14 +397,14 @@ def mappedPrimaryReads(filePath, outputFile):
 
 
 ################################## DATA VIZUALIZATION
-def plotReadsPerMAPQ(mappingQCount, outputFile ="reads_per_mapq.png"):
+def plotReadsPerMAPQ(mappingQCount, outputImagem ="reads_per_mapq.png"):
     """
     Plot the distribution of reads per MAPQ score as a bar chart with intervals of 20 
     and save it as a PNG file.
 
     
         :param : mappingQCount (dict): A dictionary with MAPQ scores as keys and counts as values.
-        :param : outputFile (str): The filename to save the plot.
+        :param : outputImagem (str): The filename to save the plot.
         :return plot path
     """
     try:
@@ -373,62 +435,59 @@ def plotReadsPerMAPQ(mappingQCount, outputFile ="reads_per_mapq.png"):
         plt.yticks(fontsize=8)
 
         # Ensure the directory exists and save the plot
-        os.makedirs(os.path.dirname(outputFile ), exist_ok=True)
-        plt.savefig(outputFile , format="png", dpi=600)
-        print(f"Plot saved at: {outputFile}")
+        os.makedirs(os.path.dirname(outputImagem ), exist_ok=True)
+        plt.savefig(outputImagem , format="png", dpi=600)
+        print(f"Plot saved at: {outputImagem}")
     except Exception as e:
         print(f"Error saving the plot: {e}")
     finally:
         plt.close()
     
-    return  outputFile
+    return  outputImagem
 
 
 
 
 
-
-def plotFlagCounts(flagCounts, output_file="flag_counts.png"):
+def plotFlagCounts(flagCounts, outputImagem="flag_counts.png", title="Number of Reads for Each Flag Value (with Percentages)"):
     """
     Plot the flag counts as a bar chart, annotate with percentages, and save the plot as a PNG file.
     
     :param flagCounts: Dictionary containing flag values and their counts.
-    :param output_file: Path to save the plot image file.
+    :param outputImagem: Path to save the plot image file.
+    :param title: Custom title for the plot.
     :return: DataFrame containing flag counts and percentages for verification.
     """
-    # Convert flagCounts dictionary to a DataFrame
-    df = pd.DataFrame(list(flagCounts.items()), columns=['Flag', 'Count'])
-    
+      # Convert flagCounts dictionary to a DataFrame
+    dataFrame = pd.DataFrame(list(flagCounts.items()), columns=['Flag', 'Count'])
+
     # Calculate the total number of reads
-    total_reads = df['Count'].sum()
-    
+    total_reads = dataFrame['Count'].sum()
+
     # Add a percentage column
-    df['Percentage'] = (df['Count'] / total_reads) * 100
-    
+    dataFrame['Percentage'] = (dataFrame['Count'] / total_reads) * 100
+
     # Plot the flag counts as a bar chart
     plt.figure(figsize=(10, 6))
-    plt.bar(df['Flag'].astype(str), df['Count'], color='skyblue')
-    
+    plt.bar(dataFrame['Flag'].astype(str), dataFrame['Count'], color='skyblue')
+
     # Annotate percentages on the bars
-    for i, (count, percentage) in enumerate(zip(df['Count'], df['Percentage'])):
+    for i, (count, percentage) in enumerate(zip(dataFrame['Count'], dataFrame['Percentage'])):
         plt.text(i, count, f"{percentage:.1f}%", ha='center', va='bottom', fontsize=8)
-    
+
     # Customize plot
     plt.xlabel('Flag Value')
     plt.ylabel('Read Count')
-    plt.title('Number of Reads for Each Flag Value')
+    plt.title(title)
     plt.xticks(rotation=45)
     plt.tight_layout()
-    
+
     # Save the plot to a file
-    plt.savefig(output_file, format='png', dpi=300)
-    print(f"Plot successfully saved to {output_file}")
-    
-    
+    plt.savefig(outputImagem, format='png', dpi=300)
+    print(f"Plot successfully saved to {outputImagem}")
     
     # Return the updated DataFrame for verification if needed
-    return df
-
+    return dataFrame
 
 
 
@@ -495,12 +554,12 @@ def plotReadsPercentage(readstatistics, outputFile="read_distribution.png"):
 
 
 
-def summaryTable(filePath, output_file="flag_summary.txt"):
+def summaryTable(filePath, outputImagem="flag_summary.txt"):
     """
     Create a summary table based on flag distribution from a SAM file and save it to a file.
     
     :param :filePath (str): Path to the .sam file.
-    :param :output_file (str): Path to save the generated text file.
+    :param :outputImagem (str): Path to save the generated text file.
     """
     # Predefined flag descriptions for known flag values (SAM flag values)
     flagDescriptions = {
@@ -529,38 +588,77 @@ def summaryTable(filePath, output_file="flag_summary.txt"):
     {'-'*80}
     """
 
-    # Add rows for each flag in flagCounts
+    # # Add rows for each flag in flagCounts
+    # totalReads = sum(flagCounts.values())  # Total number of reads (sum of all flag counts)
+    # for flag, count in flagCounts.items():
+    #     description = flags.get(flag, '')  # Get description for the flag
+    #     percentage = (count / totalReads) * 100  # Calculate percentage
+    #     table_content += f"{flag:<20} {description:<30} {count:<15} {percentage:.2f}%\n"
+# Função para tratar as flags combinadas e exibir corretamente as descrições
     totalReads = sum(flagCounts.values())  # Total number of reads (sum of all flag counts)
-    for flag, count in flagCounts.items():
-        description = flagDescriptions.get(flag, 'Unknown')  # Get description for the flag
-        percentage = (count / totalReads) * 100  # Calculate percentage
-        table_content += f"{flag:<20} {description:<30} {count:<15} {percentage:.2f}%\n"
+
+    # Iterating over the flags and counting the occurrences
+    for flagDescriptions, count in flagCounts.items():
+        description = []  # List to store the descriptions of active flags
+        for key, text in flags.items():
+            # Checking if the bit of each flag is active in the combination of flags
+            if flagDescriptions & key:
+                description.append(text)  # If the flag is active, add its description
+
+        # Creating the string of descriptions separated by commas
+        description_text = ', '.join(description)
+        
+        # Calculating the percentage
+        percentage = (count / totalReads) * 100
+        
+        # Adding the data to the table_content variable
+        table_content += f"{flagDescriptions:<20} {description_text:<50} {count:<15} {percentage:.2f}%\n"
 
     # Save the plain text table to the output file
-    with open(output_file, 'w') as file:
+    with open(outputImagem, 'w') as file:
         file.write(table_content)
     
-    print(f"Flag summary table saved to {output_file}")
+    print(f"Flag summary table saved to {outputImagem}")
+
 
 
 
 
 
 ############################# EXECUTE FLAGS AND CREATE PLOTS
-def executePlots(filePath, outputDir, minQ=0):
+def executePlots(filePath, outputDir, outputImagem='result', minQ=0):
     """
     Execute the analysis of flag statistics and read statistics on the SAM file,
     generating a bar chart, pie chart, and MAPQ distribution, and generating a flag summary file.
-
+    
     :param filePath (str): Path to the SAM file to analyze.
     :param outputDir (str): Directory where output files will be saved.
     :param minQ (int): Minimum MAPQ score for filtering reads. Defaults to 0.
-
+    
     :returns: tuple: Paths to the generated plot images, read statistics, and summary flag table file.
     """
+
+    # Check if the outputDir exists, if not, create it
+    outputDir='results'
+    outputDir = os.path.abspath(outputDir)
+
+    if os.path.exists(outputDir):
+        shutil.rmtree(outputDir)
+    else: 
+        os.makedirs(outputDir)
+    print(f"Images will be stored on the output directory: {outputDir}")
+
+    if not isinstance(outputImagem, str) or not outputImagem.strip():
+        outputImagem = 'result'
+
+    # Generate a timestamp to ensure unique filenames
+    timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')  
+    
+    outputFilename = f"{outputImagem}_{timestamp}"
+
     # Count read statistics and generate percentages
     readstatistics = countReads(filePath, minQ=minQ)
-
+    
     # Convert readstatistics to a dictionary if it's in a tuple form
     if isinstance(readstatistics, tuple):
         readstatistics = {
@@ -568,35 +666,21 @@ def executePlots(filePath, outputDir, minQ=0):
             "Unmapped Reads (%)": readstatistics[1],
             # Add more metrics from the tuple if necessary
         }
-
+    
     # Count occurrences of each FLAG
-    flagCounts = countReadsByFlags(filePath)
-    totalReads = sum(flagCounts.values())  # Total reads based on flag counts
-
+    # flagCounts = countReadsByFlags(filePath)
+    # totalReads = sum(flagCounts.values())  # Total reads based on flag counts
+    
     # Generate the MAPQ counts
     mappingQCount = readPerMAPQ(filePath)
 
-    # Define file paths for plots
-    mappingq_plot_path = f"{outputDir}/mapq_distribution.png"
-    pie_plot_path = f"{outputDir}/read_distribution.png"
-    flag_plot_path = f"{outputDir}/flag_counts.png"
-    summary_flag_table_path = f"{outputDir}/flag_summary.txt"
+    mappingq_plot_path = os.path.join(outputDir, f"{outputFilename}_mappingq.png")
+    pie_plot_path = os.path.join(outputDir, f"{outputFilename}_pie.png")
+    flag_plot_path = os.path.join(outputDir, f"{outputFilename}_flag.png")
+    summary_flag_table_path = os.path.join(outputDir, f"{outputFilename}_summary.txt")
 
     # Generate and save the bar chart for flag counts
-    df_flag = plotFlagCounts(flagCounts, flag_plot_path)  # Returns DataFrame with percentages
-
-    # Save flag counts plot
-    plt.figure(figsize=(10, 6))
-    plt.bar(df_flag['Flag'].astype(str), df_flag['Count'], color='skyblue')
-    for i, (count, percentage) in enumerate(zip(df_flag['Count'], df_flag['Percentage'])):
-        plt.text(i, count, f"{percentage:.1f}%", ha='center', va='bottom', fontsize=8)
-    plt.xlabel('Flag Value')
-    plt.ylabel('Read Count')
-    plt.title('Number of Reads for Each Flag Value (with Percentages)')
-    plt.xticks(rotation=45)
-    plt.tight_layout()
-    plt.savefig(flag_plot_path)
-    plt.close()
+    # df_flag = plotFlagCounts(flagCounts, flag_plot_path)  # Returns DataFrame with percentages
 
     # Generate the pie chart for read distribution
     plotReadsPercentage(readstatistics, pie_plot_path)
@@ -605,12 +689,10 @@ def executePlots(filePath, outputDir, minQ=0):
     plotReadsPerMAPQ(mappingQCount, mappingq_plot_path)
 
     # Call the summaryTable function to generate and save the flag summary table
-    summaryTable(filePath, output_file=summary_flag_table_path)
+    summaryTable(filePath, outputImagem=summary_flag_table_path)
 
     # Return all plot paths, statistics, and summary flag table path
     return flag_plot_path, pie_plot_path, mappingq_plot_path, readstatistics, mappingQCount, summary_flag_table_path
-
-
 
 
 
