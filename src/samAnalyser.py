@@ -174,8 +174,14 @@ def main():
         globalPercentCigar()
     
     if args.executePlots:
-    # Execute flag stats and retrieve results
-        plot_paths = executePlots(args.input, args.outputDir, args.minQ)
+        # Execute the function and retrieve results
+        plot_paths = executePlots(
+            filePath=args.input,
+            outputDir="result",
+            outputFile="analysis",
+            minQ=args.minQ
+        )
+
 
 # Ensure the plot_paths is populated and then save results
     if args.saveResults:
@@ -183,16 +189,22 @@ def main():
             print("Error: Plot paths are empty. Ensure executePlots is run before saving results.")
             return
 
-        final_cigar_table_path = globalPercentCigar()  # Get the path to the final CIGAR table
+        # Safely get the summary flag table path
+        summary_flag_table_path = plot_paths.get('summary_flag_table')
 
+        # Get the path to the final CIGAR table
+        final_cigar_table_path = globalPercentCigar()
 
+        # Proceed only if the summary_flag_table_path exists
+        if summary_flag_table_path:
+            saveResults(
+                plot_paths=plot_paths,  # Pass the dictionary containing all paths
+                summary_flag_table_path=summary_flag_table_path,
+                final_cigar_table_path=final_cigar_table_path
+            )
+        else:
+            print("Error: Summary flag table path is not available. Ensure executePlots ran correctly.")
 
-    # Call saveResults and pass final_cigar_table_path if needed
-    saveResults(
-        plot_paths=plot_paths,  # Pass the dictionary containing all paths
-        summary_flag_table_path=summary_flag_table_path,  # Assuming this is generated earlier
-        final_cigar_table_path=final_cigar_table_path  # Add the final CIGAR table if it exists
-    )
 
 
 if __name__ == "__main__":

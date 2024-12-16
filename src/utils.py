@@ -612,20 +612,32 @@ def summaryTable(filePath, outputFile="flag_summary.txt"):
 
 
 ############################# EXECUTE FLAGS AND CREATE PLOTS
-def executePlots(filePath, outputDir, minQ=0):
+def executePlots(filePath, outputDir="result", outputFile="result", minQ=0):
     """
     Execute the analysis of flag statistics and read statistics on the SAM file,
-    generating a bar chart, pie chart, and MAPQ distribution, and generating a flag summary file.
+    generating plots and a summary flag file.
     
     :param filePath (str): Path to the SAM file to analyze.
-    :param outputDir (str): Directory where output files will be saved.
+    :param outputDir (str): Directory where output files will be saved. Defaults to "result".
+    :param outputFile (str): Prefix for output files. Defaults to "result".
     :param minQ (int): Minimum MAPQ score for filtering reads. Defaults to 0.
     
-    :returns: tuple: Paths to the generated plot images, read statistics, and summary flag table file.
+    :returns: dict: Paths to the generated plot images, read statistics, and summary flag table file.
     """
     try:
-        # Ensure the output directory exists
+        # Resolve the output directory to an absolute path
+        outputDir = os.path.abspath(outputDir)
+        
+        # Ensure the output directory exists (delete and recreate if it does)
+        if os.path.exists(outputDir):
+            shutil.rmtree(outputDir)
         os.makedirs(outputDir, exist_ok=True)
+
+        print(f"Results will be stored in: {outputDir}")
+
+        # Generate a timestamp for unique filenames
+        timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')  
+        outputFile = f"{outputFile}_{timestamp}"
 
         # Count read statistics
         readStatistics = countReads(filePath, minQ=minQ)
@@ -647,14 +659,32 @@ def executePlots(filePath, outputDir, minQ=0):
         flag_plot_path = os.path.join(outputDir, "flag_counts.png")
         summary_flag_table_path = os.path.join(outputDir, "flag_summary.txt")
 
-        # Generate plots
-        plotFlagCounts(flagCounts, flag_plot_path)  # Flag counts bar chart
-        plotReadsPercentage(readStatistics, pie_plot_path)  # Read distribution pie chart
-        plotReadsPerMAPQ(mappingQCount, mappingq_plot_path)  # MAPQ distribution bar chart
-        summaryTable(filePath,summary_flag_table_path)
+        # Generate plots and summary files
+        try:
+            plotFlagCounts(flagCounts, flag_plot_path)
+            print(f"Flag counts plot saved at: {flag_plot_path}")
+        except Exception as e:
+            print(f"Error creating the flag counts plot: {e}")
 
-        # Generate flag summary table
-        
+        try:
+            plotReadsPercentage(readStatistics, pie_plot_path)
+            print(f"Read distribution plot saved at: {pie_plot_path}")
+        except Exception as e:
+            print(f"Error creating the read distribution plot: {e}")
+
+        try:
+            plotReadsPerMAPQ(mappingQCount, mappingq_plot_path)
+            print(f"MAPQ distribution plot saved at: {mappingq_plot_path}")
+        except Exception as e:
+            print(f"Error creating the MAPQ distribution plot: {e}")
+
+        try:
+            summaryTable(filePath, summary_flag_table_path)
+            print(f"Flag summary table saved to: {summary_flag_table_path}")
+        except Exception as e:
+            print(f"Error creating the flag summary table: {e}")
+
+        # Return paths of generated files
         plot_paths = {
             'flag_plot': flag_plot_path,
             'pie_plot': pie_plot_path,
@@ -662,13 +692,14 @@ def executePlots(filePath, outputDir, minQ=0):
             'readStatistics': readStatistics,
             'mappingQCount': mappingQCount,
             'summary_flag_table': summary_flag_table_path
-            }
+        }
 
         return plot_paths
 
     except Exception as e:
         print(f"Error during analysis and plotting: {e}")
         raise
+
 
 def saveResults(plot_paths, summary_flag_table_path, final_cigar_table_path="Final_Cigar_table.txt", html_output_path="Result.html"):
     """
