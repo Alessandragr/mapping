@@ -29,8 +29,6 @@ from utils import fileVerifier, countReads, readPerChrom, parseSam,readPerMAPQ, 
 # -mPR or --mappedPrimaryReads: Filters SAM file to keep only primarily mapped reads.
 # -m or --minQ: Sets the minimum MAPQ score for filtering reads.
 # -eP or --executePlots: Executes Flag Stats analysis and generates plots.
-# -aS or --alignSequences: Aligns the reference sequence and query sequence using Smith-Waterman or another alignment algorithm.
-# -r or --reference: Specifies the path to the reference sequence for alignment.
 # -gPC or --globalPercentCigar: Calculate and display global CIGAR mutation percentages.
 
 # SYNOPSIS:
@@ -47,7 +45,6 @@ from utils import fileVerifier, countReads, readPerChrom, parseSam,readPerMAPQ, 
 # SamReader.py -i <file> -eP                                     # Executes Flag Stats analysis and generates plots.
 # SamReader.py -i <file> -cRF -eP                                # Combines flag-based read counting with Flag Stats plot generation.
 # SamReader.py -i <file> -eP -sR -oD <outputDir>                                # Combines plots creation with saving results to HTML.
-# SamReader.py -i <file> -r <reference> -o <outputFile>   -aS    # Aligns reference and query sequences using an alignment algorithm.
 # SamReader.py -i <file> -gPC                                    # Calculates and displays global CIGAR mutation percentages.
 # SamReader.py -i <file> -gPC -eP -sR  -oD <outputDir>           # Combines plots creation with saving results to HTML and cigar analysis.
 
@@ -89,11 +86,7 @@ def main():
     # Arguments for saving results and generating output
     parser.add_argument('-sR', '--saveResults', action='store_true', help="Save results and graphs to an HTML file.")
     
-    # Arguments for alignSequences
-    parser.add_argument('-r', '--reference', help="Reference sequence for alignment.")
-    parser.add_argument('-aS', '--alignSequences', action='store_true', help="Align reference and query sequences.")
-    
-    
+   
     
     # Arguments for CIGAR ANALYSIS
     parser.add_argument('-gPC','--globalPercentCigar', action='store_true', help="Calculate and display global CIGAR mutation percentages.")
@@ -143,32 +136,7 @@ def main():
     if args.mappedPrimaryReads:
         mappedPrimaryReads(args.input, args.outputFile)
 
-    # Call alignSequences if the specific argument is provided
-    if args.alignSequences:
-    # Vérification des chemins nécessaires
-        if not args.reference:
-            print("Error: Reference file path is required.")
-            return
-        if not args.input:
-            print("Error: Input (query) file path is required.")
-            return
-        if not args.outputFile:
-            print("Error: Output file path is required.")
-            return
 
-        # Chargement des séquences depuis les fichiers SAM
-        reference = parseSam(args.reference)
-        if not reference:
-            print(f"Error: Failed to load sequences from reference file '{args.reference}'.")
-            return
-
-        sequences = parseSam(args.input)  # This line loads the query sequences
-        if not sequences:
-            print(f"Error: Failed to load sequences from query file '{args.input}'.")
-            return
-
-        # Si tout est en ordre, appel de la fonction alignSequences
-        alignSequences(args, smithWaterman)
     if args.globalPercentCigar:
         processSAMFileAndCigar(args.input)
         globalPercentCigar()
