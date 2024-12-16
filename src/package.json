@@ -3,7 +3,7 @@
     "version": "0.1",
     "description": "Analyze Sam file  and extract statistics about the reads",
     "author": "Amoukou Najat, Alessandra Gonçalves",
-    "license": "xxx",
+    "license": "Copyright (c) [2024] [GONCALVES RIBEIRO Alessandra, IBRAHIM AMOUKOU Najat]",
     "homepage": "https://github.com/Alessandragr/mapping/blob/main/README.md",
     "repository": {
       "type": "git",
