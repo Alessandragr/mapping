@@ -3,13 +3,12 @@
 
 ############### IMPORT MODULES ############### 
 
-import os, re, sys, argparse
+import argparse
 from collections import defaultdict
 
 from flags import flags
 
-from utils import fileVerifier, countReads, readPerChrom, readPerMAPQ, countReadsByFlags, saveResults,executePlots, filterSam, mappedRead,mappedPrimaryReads,globalPercentCigar,processSAMFileAndCigar
-
+from utils import fileVerifier, countReads, readPerChrom, readPerMAPQ, countReadsByFlags, saveResults, executePlots, filterSam, mappedRead, mappedPrimaryReads, globalPercentCigar, processSAMFileAndCigar
 
 
 
@@ -31,6 +30,8 @@ from utils import fileVerifier, countReads, readPerChrom, readPerMAPQ, countRead
 # -eP or --executePlots: Executes Flag Stats analysis and generates plots.
 # -gPC or --globalPercentCigar: Calculate and display global CIGAR mutation percentages.
 
+
+
 # SYNOPSIS:
 # SamReader.py -h or --help                                      # Displays help.
 # SamReader.py -i <file>                                         # Check if the SAM file is valid.
@@ -49,8 +50,6 @@ from utils import fileVerifier, countReads, readPerChrom, readPerMAPQ, countRead
 # SamReader.py -i <file> -gPC -eP -sR  -oD <outputDir>           # Combines plots creation with saving results to HTML and cigar analysis.
 
 
-# Main script
-import argparse
 
 def main():
     """
@@ -87,7 +86,6 @@ def main():
     parser.add_argument('-sR', '--saveResults', action='store_true', help="Save results and graphs to an HTML file.")
     
    
-    
     # Arguments for CIGAR ANALYSIS
     parser.add_argument('-gPC','--globalPercentCigar', action='store_true', help="Calculate and display global CIGAR mutation percentages.")
 
@@ -104,12 +102,11 @@ def main():
         return
 
     plot_paths = []  # Initialize plot paths
-    flagCounts = {}  # Initialize flag counts
-    flagDetails = {}  # Initialize flag details
+
 
     # Existing code for read counting, flag stats, and result saving
     if args.countReads:
-        readstatistics = countReads(args.input, args.minQ)
+        countReads(args.input, args.minQ)
 
     if args.readPerChrom:
         readPerChrom(args.input)
@@ -118,9 +115,8 @@ def main():
         readPerMAPQ(args.input)
 
     if args.countReadsByFlags:
-        flagCounts = countReadsByFlags(args.input)
-        flagDetails = {key: count for key, count in flagCounts.items()}
-
+        countReadsByFlags(args.input)
+        
     if args.filterSam:
         if not args.outputFile:
             print("Error: Output file path (-o/--outputFile) is required for filtering.")
@@ -168,7 +164,6 @@ def main():
             saveResults(
                 plot_paths=plot_paths,  # Pass the dictionary containing all paths
                 summary_flag_table_path=summary_flag_table_path,
-                final_cigar_table_path=final_cigar_table_path
             )
         else:
             print("Error: Summary flag table path is not available. Ensure executePlots ran correctly.")
