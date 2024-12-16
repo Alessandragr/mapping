@@ -49,7 +49,7 @@ def fileVerifier(filePath):
     return True
 
 # Path to the log file
-log_file_path = "/home/najat/mapping/src/timing_results.log"
+log_file_path = "C:/Users/aless/Downloads/mapping/src/timing_results.log"
 
 # Function to log output to a file
 def log_output(message):
@@ -59,15 +59,15 @@ def log_output(message):
 # Measure the running time of the Python function
 print("running python function")
 start_time = time.perf_counter()  # Start time
-fileVerifier(filePath="/home/najat/mapping/src/mapping.sam")  # Run the Python function
+fileVerifier(filePath="C:/Users/aless/Downloads/mapping/src/mapping.sam")  # Run the Python function
 end_time = time.perf_counter()  # End time
 python_time = end_time - start_time  # Calculate the time taken for the Python function
 log_output(f"Python function took {python_time:.4f} seconds.")
 
 print("running bash function")
 # Bash command to measure (make sure the Bash script logic is inside a file or a command string)
-filename = os.path.basename("/home/najat/mapping/src/mapping.sam")  # Extract the filename
-bash_command = ["/home/najat/mapping/src/standardFileVerifier.sh", filename]
+filename = os.path.basename("C:/Users/aless/Downloads/mapping/src/mapping.sam")  # Extract the filename
+bash_command = ["C:/Users/aless/Downloads/mapping/src/standardFileVerifier.sh", filename]
 
 # Measure the running time of the Bash command
 start_time = time.perf_counter()  # Start time

@@ -33,6 +33,11 @@ To run this tool, you need:
   - `os`
   - `argparse`
   - `re`
+  - `tabulate`
+  - `collections`
+  - `datetime`
+  - `shutil`
+  - `math`
 
 ### Install Required Libraries
 Install the necessary libraries using `pip`:

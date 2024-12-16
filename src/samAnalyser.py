@@ -8,7 +8,7 @@ from collections import defaultdict
 
 from flags import flags
 
-from utils import fileVerifier, countReads, readPerChrom, parseSam,readPerMAPQ, countReadsByFlags, alignSequences,smithWaterman, saveResults,executePlots, filterSam, mappedRead,mappedPrimaryReads,globalPercentCigar,processSAMFileAndCigar
+from utils import fileVerifier, countReads, readPerChrom, readPerMAPQ, countReadsByFlags, saveResults,executePlots, filterSam, mappedRead,mappedPrimaryReads,globalPercentCigar,processSAMFileAndCigar
 
 
 
