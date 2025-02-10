@@ -1051,3 +1051,189 @@ def globalPercentCigar():
         print("Error: outputTable_cigar.txt not found.")
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
+
+
+    ###################Mapping 
+    
+def parseSam(filePath):
+    """
+    Extract sequences from a SAM file.
+
+    :param filePath: Path to the SAM file.
+    :return: List of sequences (each as a tuple with read ID and sequence).
+    """
+    print("Entered parseSam") 
+    sequences = []
+    with open(filePath, 'r') as file:  # Open the SAM file for reading
+        for line in file:  # Iterate over each line in the file
+            if line.startswith('@'):  # Skip header lines (lines starting with '@')
+                continue
+            parts = line.strip().split('\t')  # Split the line by tabs to get the columns
+            if len(parts) > 9:  # Ensure there are at least 10 columns in the line
+                readId = parts[0]   # Column 1: Read ID
+                sequence = parts[9]  # Column 10: Sequence
+                sequences.append((readId, sequence))  # Store the read ID and sequence as a tuple
+    print(f"Loaded {len(sequences)} sequences from the file.")  # Print the number of sequences loaded
+    return sequences  # Return the list of sequences
+    
+
+
+def parseFastq(filePath):
+    """
+    Extract sequences from a FASTQ file.
+
+    :param filePath: Path to the FASTQ file.
+    :return: List of sequences (each as a tuple with read ID and sequence).
+    """
+    print("Entered parseFastq")
+    sequences = []
+    with open(filePath, 'r') as file:  # Open the FASTQ file for reading
+        while True:
+            try:
+                # Read four lines at a time
+                read_id = file.readline().strip()
+                if not read_id:  # End of file
+                    break
+                sequence = file.readline().strip()
+                file.readline()  # Skip the '+' line
+                file.readline()  # Skip the quality line
+
+                if read_id.startswith('@'):  # Validate FASTQ identifier
+                    read_id = read_id[1:]  # Remove '@' for consistency
+                    sequences.append((read_id, sequence))
+            except Exception as e:
+                print(f"Error processing FASTQ file: {e}")
+                break
+
+    print(f"Loaded {len(sequences)} sequences from the file.")  # Print the number of sequences loaded
+    return sequences
+
+
+
+
+def smithWaterman(sequences: list,  reference: str, matchScore: int = 2, mismatchPenalty: int = -2, gapPenalty: int = -3):
+    """
+    Perform the Smith-Waterman alignment algorithm.
+
+    :param sequences: List of tuples containing read ID and query sequences.
+    :param reference: Reference sequence to align against.
+    :param outputFilePath: Path to save the alignment results.
+    :param matchScore: Score for matching characters.
+    :param mismatchPenalty: Penalty for mismatched characters.
+    :param gapPenalty: Penalty for gaps.
+    """
+  
+    m, n = len(sequences), len(reference)  # Get the length of sequences and the reference
+    scoreMatrix = np.zeros((m + 1, n + 1), dtype=int)  # Initialize the score matrix
+    maxScore = 0  # Initialize the maximum score
+    maxPos = None  # Initialize the position of the maximum score
+
+    # Fill the score matrix with adjusted penalties based on the Smith-Waterman algorithm
+    for i in range(1, m + 1):  # Iterate over the rows of the matrix (query sequences)
+        for j in range(1, n + 1):  # Iterate over the columns of the matrix (reference sequence)
+            # Calculate the match score, delete penalty, and insert penalty
+            match = scoreMatrix[i - 1][j - 1] + (matchScore if sequences[i - 1] == reference[j - 1] else mismatchPenalty)
+            delete = scoreMatrix[i - 1][j] + gapPenalty
+            insert = scoreMatrix[i][j - 1] + gapPenalty
+            scoreMatrix[i][j] = max(0, match, delete, insert)  # Take the maximum score (with zero threshold)
+
+            if scoreMatrix[i][j] > maxScore:  # Update the maximum score and position
+                maxScore = scoreMatrix[i][j]
+                maxPos = (i, j)
+
+    # Traceback to build the alignment
+    alignedSeqOne = []  # Aligned sequence 1 (query)
+    alignedSeqTwo = []  # Aligned sequence 2 (reference)
+    i, j = maxPos  # Start the traceback from the maximum score position
+
+    while scoreMatrix[i][j] != 0:  # Continue tracing back until we reach a score of 0
+        if scoreMatrix[i][j] == scoreMatrix[i - 1][j - 1] + (matchScore if sequences[i - 1] == reference[j - 1] else mismatchPenalty):
+            alignedSeqOne.append(sequences[i - 1])  # Append the aligned query sequence
+            alignedSeqTwo.append(reference[j - 1])  # Append the aligned reference sequence
+            i -= 1  # Move to the previous row
+            j -= 1  # Move to the previous column
+        elif scoreMatrix[i][j] == scoreMatrix[i - 1][j] + gapPenalty:
+            alignedSeqOne.append(sequences[i - 1])  # Append the query sequence with a gap
+            alignedSeqTwo.append('-')  # Append a gap for the reference sequence
+            i -= 1  # Move to the previous row
+        else:
+            alignedSeqOne.append('-')  # Append a gap for the query sequence
+            alignedSeqTwo.append(reference[j - 1])  # Append the reference sequence with a gap
+            j -= 1  # Move to the previous column
+
+    return ''.join(reversed(alignedSeqOne)), ''.join(reversed(alignedSeqTwo)), maxScore  # Return the aligned sequences and the score
+
+
+
+
+def compareSequences(reference, sequences, smithWatermanFunc, scoreThreshold=50):
+    """
+    Compare query sequences with reference sequences using Smith-Waterman algorithm.
+
+    :param reference: List of sequences from the reference SAM file.
+    :param sequences: List of sequences from the query SAM file.
+    :param smithWatermanFunc: Function that implements Smith-Waterman algorithm.
+    :param scoreThreshold: Minimum score threshold for considering an alignment valid.
+    :return: List of matches with alignment details.
+    """
+    results = []  # Initialize an empty list to store the results
+
+    for queryId, querySeq in sequences:  # Iterate over the query sequences
+        for refId, refSeq in reference:  # Iterate over the reference sequences
+            # Perform the alignment using Smith-Waterman
+            alignedRef, alignedQuery, score = smithWatermanFunc(refSeq, querySeq)
+            
+            # Add the result if the score is higher than the threshold
+            if score >= scoreThreshold:  # Check if the alignment score meets the threshold
+                results.append({
+                    "queryId": queryId,  # Store the query ID
+                    "refId": refId,  # Store the reference ID
+                    "score": score,  # Store the alignment score
+                    "alignedRef": alignedRef,  # Store the aligned reference sequence
+                    "alignedQuery": alignedQuery  # Store the aligned query sequence
+                })
+    
+    return results  # Return the list of alignment results
+
+
+
+
+def alignSequences(args, smithWaterman):
+    """
+    Process sequences by comparing reference and query sequences, and print the alignment results.
+
+    :param args: Parsed command-line arguments.
+    """
+    # Check if the necessary arguments (reference, input, outputFile) are provided
+    if not args.reference or not args.input or not args.outputFile:
+        print("Error: Reference, query, and output file paths are required.")
+        return  # If not, print an error and exit the function
+    
+    # Load sequences from the reference and input (query) SAM files, ignoring the headers
+    reference = parseSam(args.reference)  # Load sequences from the reference file
+    sequences = parseFastq(args.input)  # Load sequences from the query file
+
+    # Check if the reference sequences were loaded successfully
+    if not reference:
+        print(f"Error: Failed to load sequences from reference file '{args.reference}'.")
+        return  # If the reference sequences could not be loaded, print an error and exit
+
+    # Check if the query sequences were loaded successfully
+    if not sequences:
+        print(f"Error: Failed to load sequences from query file '{args.input}'.")
+        return  # If the query sequences could not be loaded, print an error and exit
+
+    # Perform the alignment using the Smith-Waterman algorithm and save the results to the output file
+    with open(args.outputFile, 'w') as outputFile:  # Open the output file for writing
+        # Compare the reference and query sequences using the Smith-Waterman algorithm
+        matches = compareSequences(reference, sequences, smithWaterman)
+        # Iterate over the matches and write the alignment details to the output file
+        for match in matches:
+            # Write the alignment details for each match
+            outputFile.write(f"Query {match['queryId']} aligned with Reference {match['refId']}\n")
+            outputFile.write(f"Score: {match['score']}\n")
+            outputFile.write(f"Aligned Reference: {match['alignedRef']}\n")
+            outputFile.write(f"Aligned Query: {match['alignedQuery']}\n\n")
+
+    # Print a message indicating that the alignment results have been saved
+    print(f"Alignment results saved to {args.outputFile}")
