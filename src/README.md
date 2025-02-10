@@ -98,6 +98,12 @@ python3 SamAnalyser.py -h
 python3 SamAnalyser.py --help
 # To check if file is valid
 python3 SamAnalyser.py -i path/to/input.sam
+
+# Example of using with Python in Windows: 
+python samAnalyser.py -i mapping.sam -rMQ
+
+# Example of using with Python in Linux: 
+python3 samAnalyser.py -i mapping.sam -rMQ
 ```
   
 
